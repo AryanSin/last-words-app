@@ -1,0 +1,271 @@
+[2026-04-08T17:46:54.830Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T17:46:58.289Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T17:47:04.196Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T17:47:06.775Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T17:47:08.952Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-08T17:47:11.620Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T18:47:56.021Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T18:47:59.183Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T18:48:03.313Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T18:48:05.312Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T18:48:07.894Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-08T18:48:12.223Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T19:36:49.435Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T19:39:26.936Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T19:39:31.620Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-08T19:39:34.055Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T19:40:09.391Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-08T19:40:18.950Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-08T19:40:27.271Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-08T19:40:34.361Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-08T19:40:54.923Z] Method - GET,  URL - /messages/user/1,   IP - ::1
+[2026-04-08T19:41:02.453Z] Method - GET,  URL - /messages/user/2,   IP - ::1
+[2026-04-08T19:41:13.389Z] Method - DELETE,  URL - /messages/2,   IP - ::1
+[2026-04-08T19:41:25.556Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-08T19:41:28.176Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-08T19:41:32.714Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-08T19:41:35.941Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-08T19:41:54.710Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-08T19:42:01.499Z] Method - DELETE,  URL - /messages/1,   IP - ::1
+[2026-04-08T19:42:04.825Z] Method - GET,  URL - /messages/user/2,   IP - ::1
+[2026-04-08T19:42:09.300Z] Method - GET,  URL - /messages/user/1,   IP - ::1
+[2026-04-09T08:44:07.055Z] Method - GET,  URL - /messages/user/1,   IP - ::1
+[2026-04-09T08:44:10.417Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:37:04.676Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:37:08.658Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:37:11.964Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T09:38:05.996Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:38:09.376Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T09:44:52.377Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:45:01.208Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:45:20.479Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:45:27.759Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:46:53.634Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:46:58.709Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:47:00.925Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:48:28.217Z] Method - GET,  URL - /users/3,   IP - ::1
+[2026-04-09T09:48:32.346Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-09T09:48:36.705Z] Method - GET,  URL - /users/,   IP - ::1
+[2026-04-09T09:53:15.472Z] Method - GET,  URL - /users/,   IP - ::1
+[2026-04-09T09:53:18.184Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:53:21.585Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T09:53:24.038Z] Method - GET,  URL - /users/,   IP - ::1
+[2026-04-09T09:53:35.837Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T09:53:40.516Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T09:53:46.338Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T09:53:49.784Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T09:53:52.434Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T09:54:00.821Z] Method - DELETE,  URL - /messages/1,   IP - ::1
+[2026-04-09T09:54:12.224Z] Method - GET,  URL - /messages/user/1,   IP - ::1
+[2026-04-09T09:54:18.082Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T09:55:35.119Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T09:56:00.941Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-09T09:56:54.668Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-09T09:56:59.442Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T09:57:32.475Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T10:10:26.164Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T18:33:47.890Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:33:54.853Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:33:59.141Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:34:01.435Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:34:08.765Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-09T18:34:23.219Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:34:27.727Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:34:33.421Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:34:37.057Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:34:40.396Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T18:34:49.655Z] Method - GET,  URL - /messages/1,   IP - ::1
+[2026-04-09T18:34:54.718Z] Method - DELETE,  URL - /messages/1,   IP - ::1
+[2026-04-09T18:35:00.606Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T18:35:09.467Z] Method - GET,  URL - /messages/user/1,   IP - ::1
+[2026-04-09T18:35:19.593Z] Method - GET,  URL - /user/1/messages,   IP - ::1
+[2026-04-09T18:35:29.400Z] Method - GET,  URL - /users/1/messages,   IP - ::1
+[2026-04-09T18:35:35.281Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T18:36:08.865Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-09T18:36:13.460Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:36:20.247Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:08.740Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:37:17.014Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:37:20.955Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:37:24.027Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:37:29.412Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:30.192Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:34.681Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:35.022Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:37.750Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T18:37:45.577Z] Method - GET,  URL - /users/1/messages,   IP - ::1
+[2026-04-09T18:37:51.769Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T18:38:28.638Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:38:44.234Z] Method - DELETE,  URL - /users/2,   IP - ::1
+[2026-04-09T18:38:54.460Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:44:43.503Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:45:42.672Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:45:48.250Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:45:53.511Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-09T18:45:56.105Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-09T18:46:06.823Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:46:07.382Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:46:11.155Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:46:11.759Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-09T18:46:13.668Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-09T18:46:19.596Z] Method - GET,  URL - /users/1/messages,   IP - ::1
+[2026-04-09T18:46:24.555Z] Method - DELETE,  URL - /messages/1,   IP - ::1
+[2026-04-09T18:46:26.556Z] Method - GET,  URL - /users/1/messages,   IP - ::1
+[2026-04-09T18:46:37.074Z] Method - GET,  URL - /messages/2,   IP - ::1
+[2026-04-09T18:46:46.654Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-09T18:46:52.965Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-20T18:55:09.627Z] Method - GET,  URL - /,   IP - ::1
+[2026-04-20T18:55:09.851Z] Method - GET,  URL - /favicon.ico,   IP - ::1
+[2026-04-20T18:56:10.757Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:00:19.099Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T19:00:26.523Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:05:46.914Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T19:05:52.710Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:15:18.061Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T19:16:04.034Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T19:18:13.994Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T19:18:17.457Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:18:48.616Z] Method - GET,  URL - /users?email=none,   IP - ::1
+[2026-04-20T19:18:57.093Z] Method - GET,  URL - /users?email=%22none%22,   IP - ::1
+[2026-04-20T19:19:02.074Z] Method - GET,  URL - /users?email=%22none%22,   IP - ::1
+[2026-04-20T19:19:11.162Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:59:19.322Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T19:59:26.581Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T19:59:55.720Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T19:59:58.083Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:00:26.417Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:00:32.371Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:02:26.321Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:02:53.009Z] Method - GET,  URL - /users/10,   IP - ::1
+[2026-04-20T20:03:16.760Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:04:01.694Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:04:13.265Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:04:17.539Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:05:11.236Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:05:30.607Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:08:16.265Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:09:09.382Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:09:29.525Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:09:32.845Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:10:05.994Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:10:52.436Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:10:55.792Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:12:24.536Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:12:27.795Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:12:52.610Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:12:54.836Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:13:10.778Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:13:44.626Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:14:12.780Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:14:26.927Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:14:28.465Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:14:34.374Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:15:20.524Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:15:27.283Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T20:15:54.901Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:17:53.288Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:17:58.903Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:18:02.876Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T20:18:27.655Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:19:59.193Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:20:02.962Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:20:10.794Z] Method - GET,  URL - /users/1,   IP - ::1
+[2026-04-20T20:20:20.611Z] Method - GET,  URL - /users/10,   IP - ::1
+[2026-04-20T20:20:24.316Z] Method - GET,  URL - /users/10,   IP - ::1
+[2026-04-20T20:20:43.664Z] Method - GET,  URL - /users/10,   IP - ::1
+[2026-04-20T20:31:50.733Z] Method - GET,  URL - /users/1/messages,   IP - ::1
+[2026-04-20T20:31:58.340Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:32:10.712Z] Method - GET,  URL - /users/10,   IP - ::1
+[2026-04-20T20:32:14.145Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:32:21.686Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:42:04.481Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:42:24.040Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:55:54.752Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:56:11.723Z] Method - DELETE,  URL - /users/1,   IP - ::1
+[2026-04-20T20:56:15.361Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-20T20:56:28.434Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-20T20:56:34.187Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T20:56:42.791Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-20T20:57:30.651Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-20T20:57:35.163Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-20T20:57:40.951Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:58:20.346Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:58:38.559Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T20:58:41.639Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-20T20:59:24.815Z] Method - GET,  URL - /users/3/messages?page=0&size=20,   IP - ::1
+[2026-04-20T20:59:37.973Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T21:01:07.483Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T21:01:30.318Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-20T21:01:40.653Z] Method - DELETE,  URL - /users/3,   IP - ::1
+[2026-04-20T21:01:43.649Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-20T21:02:54.034Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-20T21:02:57.105Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-20T21:02:59.488Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T07:20:41.012Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-21T07:20:44.803Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T07:20:50.328Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-21T07:21:07.005Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T07:21:14.031Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-21T07:21:18.500Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-21T07:50:03.424Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-21T09:15:07.969Z] Method - GET,  URL - /users/count,   IP - ::1
+[2026-04-21T09:15:12.452Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T09:42:11.450Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T09:44:06.851Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T10:38:56.588Z] Method - POST,  URL - /users,   IP - ::1
+[2026-04-21T10:39:18.780Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T10:39:21.750Z] Method - GET,  URL - /users/3,   IP - ::1
+[2026-04-21T10:39:26.033Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T12:31:02.019Z] Method - GET,  URL - /users,   IP - ::1
+[2026-04-21T12:31:04.721Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-04-21T12:31:11.493Z] Method - GET,  URL - /users/3/messages,   IP - ::1
+[2026-04-21T12:31:20.749Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:32:48.453Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:33:15.293Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:34:46.730Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:35:24.858Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:35:37.418Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:35:42.096Z] Method - GET,  URL - /users/5/messages?page=01&size=2,   IP - ::1
+[2026-04-21T12:35:59.885Z] Method - GET,  URL - /users/5/messages?page=1&size=2,   IP - ::1
+[2026-04-21T12:36:13.173Z] Method - GET,  URL - /users/5/messages?page=2&size=2,   IP - ::1
+[2026-04-21T12:36:17.449Z] Method - GET,  URL - /users/5/messages?page=1&size=2,   IP - ::1
+[2026-04-21T12:36:37.460Z] Method - POST,  URL - /messages,   IP - ::1
+[2026-04-21T12:36:41.725Z] Method - GET,  URL - /users/5/messages?page=1&size=2,   IP - ::1
+[2026-04-21T12:36:58.863Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:37:08.417Z] Method - GET,  URL - /users/5/messages,   IP - ::1
+[2026-04-21T12:37:49.689Z] Method - GET,  URL - /messages,   IP - ::1
+[2026-05-15T12:36:05.989Z] Method - GET,  URL - /,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T12:36:12.850Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T12:37:53.168Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T12:38:22.441Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T12:38:33.048Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T12:38:48.793Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T12:44:19.586Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:51:17.536Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:51:23.521Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:52:22.803Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:52:36.409Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:54:34.007Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:54:42.361Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:54:54.023Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:55:27.302Z] Method - DELETE,  URL - /users/3,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T13:55:34.290Z] Method - DELETE,  URL - /users/7,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T13:55:47.354Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:55:53.979Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:57:00.334Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:57:43.183Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:57:49.747Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-15T13:58:00.368Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:58:12.051Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:58:52.925Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":5,"content":"Hello mfs3!"}
+[2026-05-15T13:59:11.528Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":8,"content":"Hello mfs!"}
+[2026-05-15T13:59:16.743Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":8,"content":"Hello mfs2!"}
+[2026-05-15T13:59:23.771Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T13:59:46.802Z] Method - GET,  URL - /users/8/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T13:59:52.503Z] Method - GET,  URL - /users/8/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T14:00:13.584Z] Method - GET,  URL - /,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T14:00:51.178Z] Method - DELETE,  URL - /messages/6,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T14:00:57.117Z] Method - DELETE,  URL - /messages/6,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T14:01:01.844Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+[2026-05-15T14:01:13.991Z] Method - DELETE,  URL - /users/7,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-15T14:01:19.241Z] Method - DELETE,  URL - /users/7,   IP - ::1,   id - undefined,   params - {},   body - {}

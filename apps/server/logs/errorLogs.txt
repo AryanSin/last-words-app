@@ -1,0 +1,127 @@
+[2026-04-09T09:38:31.275Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 23 (line 3 column 1)
+[2026-04-09T09:44:43.081Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 23 (line 3 column 1)
+[2026-04-09T09:44:46.200Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 23 (line 3 column 1)
+[2026-04-09T09:44:49.446Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 23 (line 3 column 1)
+[2026-04-09T09:44:56.474Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 23 (line 3 column 1)
+[2026-04-09T09:45:01.208Z] Error 💥:Error: Name and Age are mandatory fields
+[2026-04-09T09:45:20.479Z] Error 💥:Error: Name and Age are mandatory fields
+[2026-04-09T09:45:27.759Z] Error 💥:Error: Name and Age are mandatory fields
+[2026-04-09T09:48:28.218Z] Error 💥:Error: User not found
+[2026-04-09T09:48:32.347Z] Error 💥:Error: User not found
+[2026-04-09T09:56:54.670Z] Error 💥:Error: User not found
+[2026-04-09T10:10:26.165Z] Error 💥:Error: User not found
+[2026-04-09T18:36:08.865Z] Error 💥:Error: User not found
+[2026-04-20T19:16:04.067Z] Error 💥:PrismaClientValidationError: 
+Invalid `prisma.user.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:37:36
+
+  34   email: string;
+  35 };
+  36 try {
+→ 37   const user = await prisma.user.create({
+         data: {
+           name: "Aryan",
+           age: 23,
+       +   email: String
+         }
+       })
+
+Argument `email` is missing.
+[2026-04-20T20:04:13.300Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:05:11.273Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.user.delete()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:90:29
+
+  87 ) => {
+  88   try {
+  89     const id = Number(req.params.id);
+→ 90     await prisma.user.delete(
+An operation failed because it depends on one or more records that were required but not found. Record to delete does not exist.
+[2026-04-20T20:05:30.648Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.user.delete()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:90:42
+
+  87 ) => {
+  88   try {
+  89     const id = Number(req.params.id);
+→ 90     const user = await prisma.user.delete(
+An operation failed because it depends on one or more records that were required but not found. Record to delete does not exist.
+[2026-04-20T20:12:24.574Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:12:52.645Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:12:54.839Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:14:26.977Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:14:28.467Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:15:20.561Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:15:27.287Z] Error 💥:PrismaClientValidationError: 
+Invalid `prisma.user.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:47:36
+
+  44   age: number;
+  45   email: string;
+  46 };
+→ 47 const user = await prisma.user.create({
+       data: {
+         name: "Aryan",
+         age: 23,
+     +   email: String
+       }
+     })
+
+Argument `email` is missing.
+[2026-04-20T20:17:53.322Z] Error 💥:Error: User not found
+[2026-04-20T20:17:58.906Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:18:02.879Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.user.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:46:36
+
+  43   age: number;
+  44   email: string;
+  45 };
+→ 46 const user = await prisma.user.create(
+Unique constraint failed on the fields: (`email`)
+[2026-04-20T20:20:02.971Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:20:10.827Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:20:20.615Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:20:24.352Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:20:43.667Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:32:10.751Z] Error 💥:NotFoundError: No User found
+[2026-04-20T20:56:11.734Z] Error 💥:Error: User not found
+[2026-04-20T20:56:28.435Z] Error 💥:Error: User not found!
+[2026-04-20T20:56:42.792Z] Error 💥:Error: User not found!
+[2026-04-21T07:20:50.339Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.message.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/messageController.ts:33:42
+
+  30 ) => {
+  31   const { userId, content } = req.body as { userId: number; content: string };
+  32   try {
+→ 33     const message = await prisma.message.create(
+Foreign key constraint violated: `Message_userId_fkey (index)`
+[2026-04-21T07:50:03.462Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.message.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/messageController.ts:33:42
+
+  30 ) => {
+  31   const { userId, content } = req.body as { userId: number; content: string };
+  32   try {
+→ 33     const message = await prisma.message.create(
+Foreign key constraint violated: `Message_userId_fkey (index)`
+[2026-04-21T10:38:42.269Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 38 (line 4 column 1)
+[2026-04-21T10:38:56.631Z] Error 💥:PrismaClientKnownRequestError: 
+Invalid `prisma.user.create()` invocation in
+/home/aryan/personal-dev/last-words-app/apps/server/src/controllers/userController.ts:40:34
+
+  37   age: number;
+  38   email: string;
+  39 };
+→ 40 const user = await prisma.user.create(
+Unique constraint failed on the fields: (`email`)
+[2026-04-21T10:39:21.754Z] Error 💥:Error: User not found
+[2026-05-15T13:51:23.522Z] Error 💥:TypeError: Cannot read properties of undefined (reading 'user')
+[2026-05-15T13:52:22.803Z] Error 💥:TypeError: Cannot read properties of undefined (reading 'user')
+[2026-05-15T13:52:36.410Z] Error 💥:TypeError: Cannot read properties of undefined (reading 'user')
+[2026-05-15T13:54:34.056Z] Error 💥:Error: Email already registered
+[2026-05-15T13:55:27.363Z] Error 💥:Error: User not found
+[2026-05-15T13:55:53.981Z] Error 💥:Error: User not found
+[2026-05-15T13:57:00.336Z] Error 💥:Error: User not found
+[2026-05-15T14:01:19.314Z] Error 💥:Error: User not found

@@ -1,0 +1,10 @@
+[2026-04-08T19:41:13.389Z] Method - DELETE,  URL - /2,   IP - ::1,   id - 2
+[2026-04-08T19:42:01.499Z] Method - DELETE,  URL - /1,   IP - ::1,   id - 1
+[2026-04-09T08:44:07.056Z] Method - GET,  URL - /user/1,   IP - ::1,   userId - 1,   body - {"name":"Aryan","age":23}
+[2026-04-09T09:54:00.821Z] Method - DELETE,  URL - /1,   IP - ::1,   id - 1,   body - {}
+[2026-04-09T09:54:12.224Z] Method - GET,  URL - /user/1,   IP - ::1,   userId - 1,   body - {"name":"Aryan","age":23}
+[2026-04-09T18:34:49.655Z] Method - GET,  URL - /1,   IP - ::1,   id - 1,   body - {"name":"Aryan","age":23}
+[2026-04-09T18:34:54.719Z] Method - DELETE,  URL - /1,   IP - ::1,   id - 1,   body - {}
+[2026-04-09T18:46:24.555Z] Method - DELETE,  URL - /1,   IP - ::1,   id - 1,   body - {}
+[2026-04-09T18:46:37.074Z] Method - GET,  URL - /2,   IP - ::1,   id - 2,   body - {"name":"Aryan","age":23}
+[2026-05-15T14:00:57.119Z] Method - DELETE,  URL - /6,   IP - ::1,   id - 6,   params - {"id":"6"},   body - {}
