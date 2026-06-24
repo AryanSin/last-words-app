@@ -6,21 +6,38 @@ const errorLogger = getFileLogger("logs/errorLogs.txt");
 const authLogger = getFileLogger("logs/auth.log");
 const messageLogger = getFileLogger("logs/messageLogs.log");
 const userLogger = getFileLogger("logs/userLogs.log");
+const messageJobLogger = getFileLogger("logs/messageJobsLogger.log");
 
-const loggerFunction =
-  (logger: (arg0: string) => void) =>
+const loggerMiddlewareFunction =
+  (loggerFn: (arg0: string) => void) =>
   (req: Request, res: Response, next: NextFunction) => {
-    logger(
+    loggerFn(
       `Method - ${req.method},  URL - ${req.url},   IP - ${req.ip},   id - ${req.params?.id},   params - ${JSON.stringify(req.params)},   body - ${JSON.stringify(req.body)}`,
     );
     next();
   };
 
+const logger = {
+  info: (...args: unknown[]) => {
+    console.log("[INFO]", ...args);
+  },
+
+  error: (...args: unknown[]) => {
+    console.error("[ERROR]", ...args);
+  },
+
+  warn: (...args: unknown[]) => {
+    console.warn("[WARN]", ...args);
+  },
+};
+
 export {
   authLogger,
   errorLogger,
-  loggerFunction,
+  logger,
+  loggerMiddlewareFunction,
   mainLogger,
+  messageJobLogger,
   messageLogger,
   userLogger,
 };

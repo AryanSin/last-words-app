@@ -1,34 +1,40 @@
+import { userDefaultTriggerUpdateType } from "@shared/types/apiTypes";
+import { userDto } from "@shared/types/userTypes";
 import { NextFunction, Request, Response } from "express";
-import prisma from "../config/prisma";
+import { toMessageResponseDtoWithMessageStatus } from "../dto/messageDto";
+import { toUserResponseDtoMinimal } from "../dto/userDto";
+import userServices from "../services/userServices";
+import AppError from "../utils/AppError";
 import { getPagination } from "../utils/pagination";
-import { findSafeUserMany, findSafeUserUnique } from "../utils/SafeUser";
+import successResponse from "../utils/successResponse";
 
 export const getAllUsers = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const { age, name, email } = req.query;
+  const {
+    name,
+    email,
+    sort = "createdAt,desc",
+  } = req.query as {
+    name: string;
+    email: string;
+    sort: string;
+  };
 
-  const users = await findSafeUserMany({
+  const users = await userServices.getUsers({
     where: {
-      age: { equals: Number(age) || undefined },
       name: {
         contains: name ? String(name) : undefined,
         mode: "insensitive",
       },
       email: typeof email === "string" ? email : undefined,
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: Object.fromEntries([sort.split(",")]),
     ...getPagination(req),
   });
-  return res.status(200).json({
-    status: "success",
-    data: users,
-    requestedAt: req.requestTime,
-  });
+  return successResponse(res, users.map(toUserResponseDtoMinimal), 200);
 };
 
 export const getUserById = async (
@@ -37,11 +43,11 @@ export const getUserById = async (
   next: NextFunction,
 ) => {
   const id = Number(req.params.id);
-  const user = await findSafeUserUnique({ where: { id: id } });
+  const user = await userServices.getUserById(id);
 
-  return res
-    .status(200)
-    .json({ status: "success", data: user, requestedAt: req.requestTime });
+  if (!user) throw new AppError("User not found!", 404);
+
+  return successResponse(res, toUserResponseDtoMinimal(user) as userDto, 200);
 };
 
 export const deleteUserById = async (
@@ -51,9 +57,7 @@ export const deleteUserById = async (
 ) => {
   const id = Number(req.params.id);
 
-  await prisma.user.delete({
-    where: { id },
-  });
+  await userServices.deleteUserById(id);
 
   return res.status(204).send();
 };
@@ -65,22 +69,17 @@ export const getMessagesByUserId = async (
 ) => {
   const id = Number(req.params.id);
 
-  const messages = await prisma.user.findUnique({
-    where: { id: id },
-    select: {
-      messages: {
-        orderBy: {
-          createdAt: "desc",
-        },
-        ...getPagination(req),
-      },
+  const messages = await userServices.getMessagesByUserId(id, {
+    orderBy: {
+      createdAt: "desc",
     },
+    ...getPagination(req),
   });
-  return res.status(200).json({
-    status: "success",
-    data: messages?.messages,
-    requestedAt: req.requestTime,
-  });
+  return successResponse(
+    res,
+    messages?.messages?.map(toMessageResponseDtoWithMessageStatus),
+    200,
+  );
 };
 
 export const getUsersCount = async (
@@ -88,10 +87,18 @@ export const getUsersCount = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const count = await prisma.user.count();
-  return res.status(200).json({
-    status: "success",
-    data: count,
-    requestedAt: req.requestTime,
-  });
+  const count = await userServices.getUsersCount();
+  return successResponse(res, count, 200);
+};
+
+export const updateUserDefaultTrigger = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const data = req.parsedData as userDefaultTriggerUpdateType;
+  const id = Number(req.params.id);
+  const user = await userServices.updateUserById(id, data);
+
+  return successResponse(res, toUserResponseDtoMinimal(user), 200);
 };

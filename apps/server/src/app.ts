@@ -7,14 +7,17 @@ import {
 import { requestLimiter } from "./middleware/rateLimiterMiddleware";
 import { addRequestTime } from "./middleware/requestBodyModificationMiddleWare";
 import authRouter from "./routes/authRouter";
+import jobRouter from "./routes/jobRouter";
 import messageRouter from "./routes/messageRouter";
+import metricsRouter from "./routes/metricRouter";
 import userRouter from "./routes/userRouter";
-import { loggerFunction, mainLogger } from "./utils/loggers";
+import { catchAsync } from "./utils/catchAsync";
+import { loggerMiddlewareFunction, mainLogger } from "./utils/loggers";
 
 const app = express();
 
 app.use(express.json());
-app.use(loggerFunction(mainLogger));
+app.use(loggerMiddlewareFunction(mainLogger));
 
 app.use(addRequestTime);
 app.use(requestLimiter);
@@ -25,7 +28,11 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/auth", authRouter);
 
-app.use(authenticateToken);
+app.use("/jobs", jobRouter);
+
+app.use(catchAsync(authenticateToken));
+
+app.use("metrics", metricsRouter);
 
 app.use("/users", userRouter);
 

@@ -125,3 +125,86 @@ Unique constraint failed on the fields: (`email`)
 [2026-05-15T13:55:53.981Z] Error 💥:Error: User not found
 [2026-05-15T13:57:00.336Z] Error 💥:Error: User not found
 [2026-05-15T14:01:19.314Z] Error 💥:Error: User not found
+[2026-05-19T12:33:33.202Z] Error 💥:Error: client error (bad input)
+[2026-05-19T12:35:11.388Z] Error 💥:Error: client error (bad input)
+[2026-05-29T12:56:03.805Z] Error 💥:TokenExpiredError: jwt expired
+ 
+[2026-05-29T12:58:28.555Z] Error 💥:TokenExpiredError: jwt expired
+ 
+[2026-05-29T12:58:40.635Z] Error 💥:[
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "content"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  }
+]
+ 
+[2026-05-29T13:00:34.891Z] Error 💥:[
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "content"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  }
+]
+ 
+[2026-05-29T13:00:50.586Z] Error 💥:[
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "content"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  }
+]
+ 
+[2026-05-29T13:05:56.347Z] Error 💥:[
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "content"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  }
+]
+ 
+[2026-05-29T13:06:02.240Z] Error 💥:[
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "content"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  }
+]
+ 
+[2026-06-01T09:08:41.168Z] Error 💥:TokenExpiredError: jwt expired
+ 
+[2026-06-01T09:20:40.358Z] Error 💥:TypeError: (0 , SafeUser_1.findSafeUserUnique) is not a function
+ 
+[2026-06-01T09:22:05.273Z] Error 💥:Error: Email already registered
+ 
+[2026-06-01T09:22:51.975Z] Error 💥:Error: User Not found
+ 
+[2026-06-01T09:23:40.804Z] Error 💥:Error: User Not found
+ 
+[2026-06-01T09:26:04.013Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 43 (line 3 column 1)
+ 
+[2026-06-01T09:30:34.309Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 43 (line 3 column 1)
+ 
+[2026-06-04T08:22:59.670Z] Error 💥:Error: Invalid Credentials
+ 
+[2026-06-04T08:23:34.123Z] Error 💥:JsonWebTokenError: invalid token
+ 
+[2026-06-04T09:51:00.894Z] Error 💥:TokenExpiredError: jwt expired
+ 
+[2026-06-05T11:15:04.972Z] Error 💥:SyntaxError: Expected double-quoted property name in JSON at position 47 (line 3 column 1)
+ 

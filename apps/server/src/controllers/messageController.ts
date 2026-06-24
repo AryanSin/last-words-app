@@ -1,27 +1,33 @@
+import {
+  messageCreationBodyType,
+  updateMessageBodyType,
+} from "@shared/types/apiTypes";
 import { NextFunction, Request, Response } from "express";
-import prisma from "../config/prisma";
+import {
+  toMessageResponseDto,
+  toMessageResponseDtoWithMessageStatus,
+} from "../dto/messageDto";
+import messageServices from "../services/messageServices";
+import userServices from "../services/userServices";
 import { getPagination } from "../utils/pagination";
+import successResponse from "../utils/successResponse";
 
 export const getAllMessages = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  try {
-    const messages = await prisma.message.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-      ...getPagination(req),
-    });
-    return res.status(200).json({
-      status: "success",
-      data: messages,
-      requestedAt: req.requestTime,
-    });
-  } catch (err) {
-    return next(err);
-  }
+  const messages = await messageServices.getMessages({
+    orderBy: {
+      createdAt: "desc",
+    },
+    ...getPagination(req),
+  });
+  return successResponse(
+    res,
+    messages.map(toMessageResponseDtoWithMessageStatus),
+    200,
+  );
 };
 
 export const createMessage = async (
@@ -29,19 +35,32 @@ export const createMessage = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { userId, content } = req.body as { userId: number; content: string };
-  try {
-    const message = await prisma.message.create({
-      data: { content, userId },
-    });
-    return res.status(201).json({
-      status: "success",
-      data: message,
-      requestedAt: req.requestTime,
-    });
-  } catch (err: any) {
-    return next(err);
-  }
+  const data = req.parsedData as messageCreationBodyType;
+
+  const message = await messageServices.createMessage(data);
+
+  return successResponse(res, toMessageResponseDto(message), 201);
+};
+
+export const getUserMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const id = Number(req.user?.id);
+
+  const messages = await userServices.getMessagesByUserId(id, {
+    orderBy: {
+      createdAt: "desc",
+    },
+    ...getPagination(req),
+  });
+
+  return successResponse(
+    res,
+    messages?.messages?.map(toMessageResponseDtoWithMessageStatus),
+    200,
+  );
 };
 
 export const getMessageById = async (
@@ -49,18 +68,14 @@ export const getMessageById = async (
   res: Response,
   next: NextFunction,
 ) => {
-  try {
-    const id = Number(req.params.id);
-    const message = await prisma.message.findUniqueOrThrow({
-      where: { id: id },
-    });
+  const id = Number(req.params.id);
+  const message = await messageServices.getMessageById(id);
 
-    return res
-      .status(200)
-      .json({ status: "success", data: message, requestedAt: req.requestTime });
-  } catch (err) {
-    return next(err);
-  }
+  return successResponse(
+    res,
+    toMessageResponseDtoWithMessageStatus(message),
+    200,
+  );
 };
 
 export const deleteMessageByMessageId = async (
@@ -69,11 +84,21 @@ export const deleteMessageByMessageId = async (
   next: NextFunction,
 ) => {
   const id = Number(req.params.id);
-  try {
-    await prisma.message.delete({ where: { id: id } });
 
-    return res.status(204).send();
-  } catch (err) {
-    return next(err);
-  }
+  await messageServices.deleteMessageById(id);
+
+  return res.status(204).send();
+};
+
+export const updateMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const data = req.parsedData as updateMessageBodyType;
+  const id = Number(req.params.id);
+
+  const message = await messageServices.updateMessage(id, data);
+
+  return successResponse(res, toMessageResponseDto(message), 201);
 };

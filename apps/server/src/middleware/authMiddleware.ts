@@ -1,10 +1,11 @@
 import { User } from "@prisma/client";
+import { registerUserType } from "@shared/types/apiTypes";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env";
 import TokenPayload from "../interfaces/webTokenInterface";
+import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
-import { findSafeUserUnique } from "../utils/SafeUser";
 
 declare global {
   namespace Express {
@@ -20,44 +21,12 @@ export const validateRegisterInput = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { name, age, password, email } = req.body as {
-    name?: string;
-    age?: number;
-    password?: string;
-    email?: string;
-  };
+  const { email } = req.parsedData as registerUserType;
 
-  if (!name || !age || !password || !email) {
-    throw new AppError("Please enter all mandatory fields", 400);
-  }
+  const existingUser = await userServices.getUserByEmail(email);
 
-  try {
-    const existingUser = await findSafeUserUnique({
-      where: { email },
-    });
-
-    if (!!existingUser) {
-      throw new AppError("Email already registered", 409);
-    }
-
-    next();
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const validateLoginInput = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const { password, email } = req.body as {
-    password?: string;
-    email?: string;
-  };
-
-  if (!password || !email) {
-    throw new AppError("Please enter all mandatory fields", 400);
+  if (!!existingUser) {
+    throw new AppError("Email already registered", 409);
   }
 
   next();
@@ -76,21 +45,12 @@ export const authenticateToken = async (
       message: "Unauthorized. No token provided.",
     });
   }
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    const user = await findSafeUserUnique({
-      where: {
-        id: Number(decoded.id),
-      },
-    });
 
-    if (!user) throw new AppError("User with given emailId not found", 404);
-    req.user = user;
+  const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+  const user = await userServices.getUserById(Number(decoded.id));
 
-    next();
-  } catch (error) {
-    return res.status(403).json({
-      message: "Forbidden - Invalid or expired token",
-    });
-  }
+  if (!user) throw new AppError("User with given emailId not found", 404);
+  req.user = user;
+
+  next();
 };

@@ -269,3 +269,148 @@
 [2026-05-15T14:01:01.844Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
 [2026-05-15T14:01:13.991Z] Method - DELETE,  URL - /users/7,   IP - ::1,   id - undefined,   params - {},   body - {}
 [2026-05-15T14:01:19.241Z] Method - DELETE,  URL - /users/7,   IP - ::1,   id - undefined,   params - {},   body - {}
+[2026-05-19T12:33:07.513Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-19T12:33:18.698Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+[2026-05-19T12:33:33.117Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":8,"content":"Hello mfs2!"}
+[2026-05-19T12:35:11.296Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":8,"content":"Hello mfs2!"}
+[2026-05-19T12:35:28.037Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs2!"}
+[2026-05-19T12:35:34.657Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!"}
+[2026-05-19T12:49:33.732Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+[2026-05-20T10:05:21.820Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+[2026-05-20T10:07:47.180Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+[2026-05-21T09:32:15.293Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+[2026-05-21T11:12:22.888Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+[2026-05-29T12:56:03.803Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-05-29T12:56:09.749Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+ 
+[2026-05-29T12:56:21.888Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-05-29T12:56:38.938Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-05-29T12:58:28.553Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T12:58:40.629Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:00:34.839Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:00:50.581Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:05:56.342Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:06:02.232Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:07:36.796Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:07:56.521Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:08:18.583Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-05-29T13:09:39.072Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"triggerAfterDays":1}
+ 
+[2026-06-01T09:08:41.165Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-01T09:08:48.602Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23,"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+ 
+[2026-06-01T09:08:57.655Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+ 
+[2026-06-01T09:09:04.592Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:14:23.692Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:15:36.404Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:15:53.362Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:15:55.990Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:20:40.357Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:22:05.266Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","email":"aryan30singhal@gmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:22:51.974Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Jeet","email":"aryansinghal@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:23:40.803Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Jeet","email":"aryansinghal@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:25:48.814Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Jeet","email":"aryansinghal@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-01T09:31:36.340Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com"}
+ 
+[2026-06-01T09:31:43.957Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+ 
+[2026-06-01T09:32:15.903Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryan30singhal@gmail.com","password":"Aryan3008"}
+ 
+[2026-06-01T09:33:14.913Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-01T09:42:41.015Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T05:58:57.007Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+ 
+[2026-06-04T05:59:10.516Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {"userId":1,"content":"Hello mfs3!","isTriggered":true,"triggerAfterDays":1}
+ 
+[2026-06-04T08:22:32.247Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"aryan","email":"aryansinghaltest@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-04T08:22:59.618Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com","password":"Aryan3008"}
+ 
+[2026-06-04T08:23:04.625Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-04T08:23:34.122Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T08:23:37.773Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T08:27:49.386Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T08:28:32.021Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T08:28:46.824Z] Method - POST,  URL - /auth/register,   IP - ::1,   id - undefined,   params - {},   body - {"name":"aryan","email":"aryansinghaltest2@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-04T08:28:51.187Z] Method - GET,  URL - /users,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T08:36:44.559Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":3,"triggerAfterDays":1}
+ 
+[2026-06-04T08:38:17.663Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":3,"triggerAfterDays":1,"content":"Hi there buddy. If you are reading this, I'm probably dead. It was fun while it lasted. But alas the end has come. I partied too hard and now it's time to test the limits of the gods."}
+ 
+[2026-06-04T08:39:05.241Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":4,"triggerAfterDays":1,"content":"Hi there homie. If you are reading this, I'm probably dead or on a bender, you know how it is. Its been good. Have fun, child"}
+ 
+[2026-06-04T08:39:37.061Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":4,"triggerAfterDays":1,"content":"Hi there mf. You suck, ya piece of shit!"}
+ 
+[2026-06-04T08:40:11.374Z] Method - POST,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"userId":3,"triggerAfterDays":1,"content":"Hi there mf. Sorry to be the beared of bad news, you're adoped 0_0!"}
+ 
+[2026-06-04T08:40:17.270Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T09:51:00.893Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T09:51:24.240Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-04T09:51:45.653Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T09:52:07.423Z] Method - GET,  URL - /users/3/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T09:52:19.385Z] Method - GET,  URL - /users/4/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T09:52:34.282Z] Method - DELETE,  URL - /messages/6,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T09:52:41.621Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-04T09:52:53.055Z] Method - GET,  URL - /users/3/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:10:51.227Z] Method - DELETE,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:11:04.888Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:12:07.215Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:12:12.351Z] Method - POST,  URL - /jobs/trigger-message,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:12:17.388Z] Method - GET,  URL - /users/3/messages,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-04T10:12:42.435Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 
+[2026-06-05T11:15:23.886Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com"}
+ 
+[2026-06-05T11:15:36.617Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {}
+ 
+[2026-06-05T11:15:51.503Z] Method - POST,  URL - /auth/login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com","password":"Ary@n3008"}
+ 
+[2026-06-05T11:16:15.563Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
+ 

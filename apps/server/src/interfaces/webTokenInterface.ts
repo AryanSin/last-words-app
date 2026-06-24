@@ -4,7 +4,6 @@ interface TokenPayload extends jwt.JwtPayload {
   id: number;
   email: string;
   name: string;
-  age: number;
   password?: string;
   lastLoginAt: Date;
   createdAt: Date;

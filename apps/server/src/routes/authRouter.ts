@@ -1,20 +1,28 @@
+import {
+  loginUserSchema,
+  registerUserSchema,
+} from "@shared/schemas/authSchemas";
 import express from "express";
 import { createUser, handleLogin } from "../controllers/authController";
-import {
-  validateLoginInput,
-  validateRegisterInput,
-} from "../middleware/authMiddleware";
+import { validateRegisterInput } from "../middleware/authMiddleware";
+import validate from "../middleware/validate";
 import { catchAsync } from "../utils/catchAsync";
-import { authLogger, loggerFunction } from "../utils/loggers";
+import { authLogger, loggerMiddlewareFunction } from "../utils/loggers";
 
 const authRouter = express.Router();
 
-authRouter.use(loggerFunction(authLogger));
+authRouter.use(loggerMiddlewareFunction(authLogger));
 
 authRouter
   .route("/register")
-  .post(catchAsync(validateRegisterInput), catchAsync(createUser));
+  .post(
+    validate(registerUserSchema),
+    catchAsync(validateRegisterInput),
+    catchAsync(createUser),
+  );
 
-authRouter.route("/login").post(validateLoginInput, catchAsync(handleLogin));
+authRouter
+  .route("/login")
+  .post(catchAsync(validate(loginUserSchema)), catchAsync(handleLogin));
 
 export default authRouter;

@@ -1,33 +1,29 @@
+import { loginUserType, registerUserType } from "@shared/types/apiTypes";
 import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
-import prisma from "../config/prisma";
+import { toUserResponseDto, toUserResponseDtoMinimal } from "../dto/userDto";
+import authServices from "../services/authServices";
+import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
 import { generateToken } from "../utils/authUtility";
-import SafeUser from "../utils/SafeUser";
+import successResponse from "../utils/successResponse";
 
 export const createUser = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const { name, age, email, password } = req.body as User;
+  const { name, email, password } = req.body as registerUserType;
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(password, salt);
-  const payload = {
+
+  const user = await authServices.createUser({
     name,
-    age,
     email,
     password: hashedPassword,
-  };
-  const user = await prisma.user.create({
-    data: payload,
   });
 
-  return res.status(201).json({
-    status: "success",
-    data: SafeUser(user),
-    requestedAt: req.requestTime,
-  });
+  return successResponse(res, toUserResponseDtoMinimal(user), 201);
 };
 
 export const handleLogin = async (
@@ -35,20 +31,15 @@ export const handleLogin = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { email, password } = req.body as {
-    email: string;
-    password: string;
-  };
+  const { email, password } = req.parsedData as loginUserType;
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+  const user = await userServices.getUserByEmail(email);
 
   if (!user) {
     throw new AppError("User does not exist", 409);
   }
 
-  const safeUser = SafeUser(user);
+  const safeUser = toUserResponseDto(user);
 
   req.user = safeUser;
 
@@ -61,18 +52,13 @@ export const handleLogin = async (
 
   const token = generateToken(safeUser);
 
-  await prisma.user.update({
-    where: {
-      email: email,
-    },
-    data: {
-      lastLoginAt: new Date(),
-    },
+  await userServices.updateUserByEmail(email, {
+    lastLoginAt: new Date(),
   });
 
-  return res.status(200).json({
-    status: "success",
-    data: token,
-    requestedAt: req.requestTime,
-  });
+  return successResponse(
+    res,
+    { token: token, user: toUserResponseDtoMinimal(user) },
+    200,
+  );
 };

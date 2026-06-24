@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 
 declare global {
   namespace Express {
-    interface Request {
+    interface Response {
       requestTime?: Date;
     }
   }
@@ -12,6 +12,6 @@ export const addRequestTime = (
   res: Response,
   next: NextFunction,
 ) => {
-  req.requestTime = new Date();
+  res.requestTime = new Date();
   next();
 };
