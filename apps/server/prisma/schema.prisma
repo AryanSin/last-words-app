@@ -8,70 +8,71 @@ datasource db {
 }
 
 model User {
-  id        Int         @id @default(autoincrement())
-  name      String
-  email     String      @unique
-  messages  Message[]
-  password  String?
-  lastLoginAt DateTime  @default(now())
-  defaultTriggerAfterDays Int? @default(365)
-  createdAt DateTime    @default(now())
-  archived Boolean?     @default(false)
+  name                    String
+  createdAt               DateTime  @default(now())
+  id                      Int       @id @default(autoincrement())
+  email                   String    @unique
+  lastLoginAt             DateTime  @default(now())
+  password                String?
+  defaultTriggerAfterDays Int?      @default(365)
+  archived                Boolean?  @default(false)
+  messages                Message[]
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  content   String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id               Int                  @id @default(autoincrement())
+  content          String
+  userId           Int
+  createdAt        DateTime             @default(now())
   triggerAfterDays Int?
-  status MessageStatus @default(PENDING)
-  sentAt DateTime?
-  failedAttempts Int @default(0)
-  lastError String?
-  messageEvents EmailDeliveryEvent[]
+  sentAt           DateTime?
+  failedAttempts   Int                  @default(0)
+  lastError        String?
+  status           MessageStatus        @default(PENDING)
+  messageEvents    EmailDeliveryEvent[]
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
 
 model EmailDeliveryEvent {
   id        Int      @id @default(autoincrement())
-
   messageId Int
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
   success   Boolean
   error     String?
-
   createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId, createdAt])
 }
 
 model SystemMetric {
   id                 Int      @id @default(autoincrement())
-
   totalEmailsSent    Int      @default(0)
   totalEmailFailures Int      @default(0)
-
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
 
 model JobExecution {
-  id Int @id @default(autoincrement())
-  jobName String
-  startedAt DateTime
-  completedAt DateTime?
-  duration Int?
-  successCount Int @default(0)
-  failureCount Int @default(0)
-  status String
+  id           Int       @id @default(autoincrement())
+  jobName      String
+  startedAt    DateTime
+  completedAt  DateTime?
+  duration     Int?
+  successCount Int       @default(0)
+  failureCount Int       @default(0)
+  status       String
 }
 
 enum MessageStatus {
   PENDING
   SENT
   FAILED
+}
+
+enum AuditLogActions {
+  LOGIN
+  MESSAGE_CREATED
+  MESSAGE_TRIGGERED
 }

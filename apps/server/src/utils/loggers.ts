@@ -3,10 +3,11 @@ import { getFileLogger } from "../middleware/loggerMiddleware";
 
 const mainLogger = getFileLogger("logs/mainLogs.txt");
 const errorLogger = getFileLogger("logs/errorLogs.txt");
-const authLogger = getFileLogger("logs/auth.log");
-const messageLogger = getFileLogger("logs/messageLogs.log");
-const userLogger = getFileLogger("logs/userLogs.log");
-const messageJobLogger = getFileLogger("logs/messageJobsLogger.log");
+const authLogger = getFileLogger("logs/auth.txt");
+const messageLogger = getFileLogger("logs/messageLogs.txt");
+const userLogger = getFileLogger("logs/userLogs.txt");
+const messageJobLogger = getFileLogger("logs/messageJobsLogger.txt");
+const redisLogger = getFileLogger("logs/redisLogs.txt");
 
 const loggerMiddlewareFunction =
   (loggerFn: (arg0: string) => void) =>
@@ -39,5 +40,6 @@ export {
   mainLogger,
   messageJobLogger,
   messageLogger,
+  redisLogger,
   userLogger,
 };
