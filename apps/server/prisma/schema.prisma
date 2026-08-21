@@ -8,50 +8,72 @@ datasource db {
 }
 
 model User {
-  name                    String
-  createdAt               DateTime  @default(now())
-  id                      Int       @id @default(autoincrement())
-  email                   String    @unique
-  lastLoginAt             DateTime  @default(now())
+  id                      Int            @id @default(autoincrement())
+  name                    String?
+  email                   String?        @unique
+  phoneNumber             String?        @unique
+  googleId                String?        @unique
   password                String?
-  defaultTriggerAfterDays Int?      @default(365)
-  archived                Boolean?  @default(false)
+  avatarUrl               String?
+  isEmailVerified         Boolean        @default(false)
+  isPhoneVerified         Boolean        @default(false)
+  authProviders           AuthProvider[] @default([LOCAL])
+  defaultTriggerAfterDays Int?           @default(365)
+  archived                Boolean?       @default(false)
+  lastLoginAt             DateTime       @default(now())
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @default(now()) @updatedAt
   messages                Message[]
+
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([googleId])
 }
 
 model Message {
-  id               Int                  @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
+  title            String?
   content          String
+  recipientName    String?
+  recipientEmail   String?
+  recipientPhone   String?
+  deliveryChannel  DeliveryChannel @default(EMAIL)
   userId           Int
-  createdAt        DateTime             @default(now())
   triggerAfterDays Int?
   sentAt           DateTime?
-  failedAttempts   Int                  @default(0)
+  failedAttempts   Int             @default(0)
   lastError        String?
-  status           MessageStatus        @default(PENDING)
-  messageEvents    EmailDeliveryEvent[]
-  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           MessageStatus   @default(PENDING)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  deliveryEvents   DeliveryEvent[]
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([status])
 }
 
-model EmailDeliveryEvent {
-  id        Int      @id @default(autoincrement())
+model DeliveryEvent {
+  id        Int             @id @default(autoincrement())
   messageId Int
+  channel   DeliveryChannel @default(EMAIL)
+  recipient String
   success   Boolean
   error     String?
-  createdAt DateTime @default(now())
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  message   Message         @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId, createdAt])
 }
 
 model SystemMetric {
-  id                 Int      @id @default(autoincrement())
-  totalEmailsSent    Int      @default(0)
-  totalEmailFailures Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  totalEmailsSent     Int      @default(0)
+  totalEmailFailures  Int      @default(0)
+  totalWhatsAppSent   Int      @default(0)
+  totalWhatsAppFail   Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model JobExecution {
@@ -63,6 +85,18 @@ model JobExecution {
   successCount Int       @default(0)
   failureCount Int       @default(0)
   status       String
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  WHATSAPP
+}
+
+enum DeliveryChannel {
+  EMAIL
+  WHATSAPP
+  BOTH
 }
 
 enum MessageStatus {

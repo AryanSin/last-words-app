@@ -1,4 +1,4 @@
-import { MessageStatus, Prisma } from "@prisma/client";
+import { DeliveryChannel, MessageStatus, Prisma } from "@prisma/client";
 import { MAX_MAIL_RETRIES } from "../config/constants";
 import prisma from "../config/prisma";
 import { shouldTriggerMessage } from "../helpers/messageTriggerHelpers";
@@ -25,13 +25,20 @@ export const runMessageTriggerService = async () => {
       },
       select: {
         id: true,
+        title: true,
         content: true,
+        recipientName: true,
+        recipientEmail: true,
+        recipientPhone: true,
+        deliveryChannel: true,
         triggerAfterDays: true,
         failedAttempts: true,
         user: {
           select: {
             id: true,
+            name: true,
             email: true,
+            phoneNumber: true,
             lastLoginAt: true,
             defaultTriggerAfterDays: true,
           },
@@ -43,7 +50,7 @@ export const runMessageTriggerService = async () => {
       shouldTriggerMessage(message, message.user),
     );
 
-    const { successfullySentMessages, failedMessages } =
+    const { successfullySentMessages, failedMessages, allEvents } =
       await sendMessages(messagesToSend);
 
     cronJobExecution = {
@@ -53,78 +60,93 @@ export const runMessageTriggerService = async () => {
       status: "FINISHED SENDING",
     };
 
-    const updateSentMessages = await prisma.message.updateMany({
-      where: {
-        id: {
-          in: successfullySentMessages,
+    if (successfullySentMessages.length > 0) {
+      await prisma.message.updateMany({
+        where: {
+          id: {
+            in: successfullySentMessages,
+          },
         },
-      },
-      data: {
-        status: MessageStatus.SENT,
-        sentAt: new Date(),
-      },
-    });
+        data: {
+          status: MessageStatus.SENT,
+          sentAt: new Date(),
+        },
+      });
+    }
 
-    const updateFailedMessages = await prisma.$transaction(
-      failedMessages.map((msg) =>
-        prisma.message.update({
-          where: {
-            id: msg.id,
-          },
-          data: {
-            status: MessageStatus.FAILED,
-            lastError: String(msg.error).slice(0, 500),
-            failedAttempts: { increment: 1 },
-          },
-        }),
-      ),
-    );
+    if (failedMessages.length > 0) {
+      await prisma.$transaction(
+        failedMessages.map((msg) =>
+          prisma.message.update({
+            where: {
+              id: msg.id,
+            },
+            data: {
+              status: MessageStatus.FAILED,
+              lastError: String(msg.error).slice(0, 500),
+              failedAttempts: { increment: 1 },
+            },
+          }),
+        ),
+      );
+    }
 
-    cronJobExecution = {
-      ...cronJobExecution,
-      status: "UPDATED MESSAGE STATUS",
-    };
+    // Persist all delivery events
+    if (allEvents.length > 0) {
+      await prisma.deliveryEvent.createMany({
+        data: allEvents.map((ev) => ({
+          messageId: ev.messageId,
+          channel: ev.channel,
+          recipient: ev.recipient,
+          success: ev.success,
+          error: ev.error ? String(ev.error).slice(0, 500) : null,
+        })),
+      });
+    }
 
-    await prisma.emailDeliveryEvent.createMany({
-      data: successfullySentMessages.map((id) => ({
-        messageId: id,
-        success: true,
-      })),
-    });
+    // Update system metrics counters
+    const emailSuccessCount = allEvents.filter(
+      (e) => e.channel === DeliveryChannel.EMAIL && e.success,
+    ).length;
+    const emailFailCount = allEvents.filter(
+      (e) => e.channel === DeliveryChannel.EMAIL && !e.success,
+    ).length;
+    const waSuccessCount = allEvents.filter(
+      (e) => e.channel === DeliveryChannel.WHATSAPP && e.success,
+    ).length;
+    const waFailCount = allEvents.filter(
+      (e) => e.channel === DeliveryChannel.WHATSAPP && !e.success,
+    ).length;
 
-    await prisma.emailDeliveryEvent.createMany({
-      data: failedMessages.map((msg) => ({
-        messageId: msg.id,
-        success: false,
-        error: String(msg.error).slice(0, 500),
-      })),
-    });
-
-    cronJobExecution = {
-      ...cronJobExecution,
-      status: "CREATED EMAIL DELIVERY EVENT",
-    };
-
-    await prisma.systemMetric.update({
-      where: {
+    await prisma.systemMetric.upsert({
+      where: { id: 1 },
+      create: {
         id: 1,
+        totalEmailsSent: emailSuccessCount,
+        totalEmailFailures: emailFailCount,
+        totalWhatsAppSent: waSuccessCount,
+        totalWhatsAppFail: waFailCount,
       },
-      data: {
-        totalEmailsSent: {
-          increment: successfullySentMessages.length,
-        },
-        totalEmailFailures: {
-          increment: failedMessages.length,
-        },
+      update: {
+        totalEmailsSent: { increment: emailSuccessCount },
+        totalEmailFailures: { increment: emailFailCount },
+        totalWhatsAppSent: { increment: waSuccessCount },
+        totalWhatsAppFail: { increment: waFailCount },
       },
     });
 
     cronJobExecution = {
       ...cronJobExecution,
-      status: "FINISHED JOB",
+      completedAt: new Date(),
+      status: "COMPLETED",
     };
-  } catch (err) {
+  } catch (err: any) {
     logger.error("Message trigger service failed:", err);
+    cronJobExecution = {
+      ...cronJobExecution,
+      completedAt: new Date(),
+      status: `FAILED: ${String(err?.message || err).slice(0, 200)}`,
+    };
   }
 
   await prisma.jobExecution.create({

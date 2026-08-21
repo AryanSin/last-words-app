@@ -414,3 +414,23 @@
  
 [2026-06-05T11:16:15.563Z] Method - GET,  URL - /messages,   IP - ::1,   id - undefined,   params - {},   body - {"name":"Aryan","age":23}
  
+[2026-08-17T09:02:26.625Z] Method - GET,  URL - /health,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {}
+ 
+[2026-08-17T09:02:26.648Z] Method - POST,  URL - /auth/register,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"name":"Test User","email":"testuser_1786957346633@example.com","password":"Password123!"}
+ 
+[2026-08-17T09:02:26.739Z] Method - POST,  URL - /auth/login,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"email":"testuser_1786957346633@example.com","password":"Password123!"}
+ 
+[2026-08-17T09:02:26.791Z] Method - POST,  URL - /auth/whatsapp/send-otp,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"phoneNumber":"+14155552671"}
+ 
+[2026-08-17T09:02:26.798Z] Method - POST,  URL - /auth/whatsapp/verify-otp,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"phoneNumber":"+14155552671","otp":"250315","name":"WhatsApp Tester"}
+ 
+[2026-08-17T09:02:26.806Z] Method - GET,  URL - /users/me,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {}
+ 
+[2026-08-17T09:02:26.816Z] Method - POST,  URL - /users/check-in,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {}
+ 
+[2026-08-17T09:02:26.823Z] Method - POST,  URL - /messages,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"title":"My Last Words to Loved One","content":"If you are reading this, I have been away for too long. Here is what I wanted you to know...","recipientName":"Jane Doe","recipientEmail":"janedoe@example.com","deliveryChannel":"EMAIL","triggerAfterDays":30}
+ 
+[2026-08-17T09:02:26.835Z] Method - POST,  URL - /messages,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"title":"WhatsApp Farewell Message","content":"Important message sent automatically via WhatsApp after inactivity trigger.","recipientName":"Family Group","recipientPhone":"+14155559999","deliveryChannel":"WHATSAPP","triggerAfterDays":15}
+ 
+[2026-08-17T09:02:26.842Z] Method - GET,  URL - /messages,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {}
+ 

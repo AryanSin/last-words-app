@@ -59,3 +59,11 @@
  
 [2026-06-05T11:15:51.503Z] Method - POST,  URL - /login,   IP - ::1,   id - undefined,   params - {},   body - {"email":"aryansinghaltest@yopmail.com","password":"Ary@n3008"}
  
+[2026-08-17T09:02:26.648Z] Method - POST,  URL - /register,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"name":"Test User","email":"testuser_1786957346633@example.com","password":"Password123!"}
+ 
+[2026-08-17T09:02:26.739Z] Method - POST,  URL - /login,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"email":"testuser_1786957346633@example.com","password":"Password123!"}
+ 
+[2026-08-17T09:02:26.791Z] Method - POST,  URL - /whatsapp/send-otp,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"phoneNumber":"+14155552671"}
+ 
+[2026-08-17T09:02:26.798Z] Method - POST,  URL - /whatsapp/verify-otp,   IP - ::ffff:127.0.0.1,   id - undefined,   params - {},   body - {"phoneNumber":"+14155552671","otp":"250315","name":"WhatsApp Tester"}
+ 

@@ -1,9 +1,11 @@
-import { User } from "@prisma/client";
 import { minimalMessageWithUser } from "../interfaces/messageInterfaces";
 
 export const shouldTriggerMessage = (
-  message: minimalMessageWithUser,
-  user: Omit<User, "password" | "name" | "createdAt">,
+  message: Pick<minimalMessageWithUser, "triggerAfterDays">,
+  user: {
+    lastLoginAt: Date | string;
+    defaultTriggerAfterDays?: number | null;
+  },
 ) => {
   const triggerAfterDays =
     message.triggerAfterDays ?? user.defaultTriggerAfterDays;

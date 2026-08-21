@@ -7,13 +7,15 @@ const messageServices = {
     select?: Prisma.MessageSelect<DefaultArgs> | null | undefined;
     omit?: Prisma.MessageOmit<DefaultArgs> | null | undefined;
     include?: Prisma.MessageInclude<DefaultArgs> | null | undefined;
-    where?: Prisma.MessageWhereUniqueInput;
+    where?: Prisma.MessageWhereInput;
     orderBy?: Prisma.MessageOrderByWithRelationInput;
     take?: number;
     skip?: number;
   }) => {
-    const messages = await prisma.message.findMany(messageProps);
-    return messages;
+    return await prisma.message.findMany({
+      ...messageProps,
+      include: messageProps.include || { deliveryEvents: true },
+    });
   },
 
   createMessage: async (
@@ -24,12 +26,27 @@ const messageServices = {
   ) => {
     return await prisma.message.create({
       data,
+      include: {
+        deliveryEvents: true,
+      },
     });
   },
 
   getMessageById: async (id: number) => {
     return await prisma.message.findUniqueOrThrow({
-      where: { id: id },
+      where: { id },
+      include: {
+        deliveryEvents: true,
+      },
+    });
+  },
+
+  getMessageByIdAndUserId: async (id: number, userId: number) => {
+    return await prisma.message.findFirst({
+      where: { id, userId },
+      include: {
+        deliveryEvents: true,
+      },
     });
   },
 
@@ -49,6 +66,9 @@ const messageServices = {
     return await prisma.message.update({
       where: { id },
       data,
+      include: {
+        deliveryEvents: true,
+      },
     });
   },
 

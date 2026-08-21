@@ -1,23 +1,35 @@
+import {
+  updateUserProfileSchema,
+  userDefaultTriggerUpdateSchema,
+} from "@shared/schemas/userSchemas";
 import express from "express";
 import {
+  checkInCurrentUser,
   deleteUserById,
   getAllUsers,
+  getCurrentUser,
   getMessagesByUserId,
   getUserById,
   getUsersCount,
+  updateCurrentUser,
   updateUserDefaultTrigger,
 } from "../controllers/userController";
-
-import { userDefaultTriggerUpdateSchema } from "@shared/schemas/userSchemas";
 import validate from "../middleware/validate";
 import { catchAsync } from "../utils/catchAsync";
 import { loggerMiddlewareFunction, userLogger } from "../utils/loggers";
 
 const userRouter = express.Router();
 
-userRouter.route("/").get(catchAsync(getAllUsers));
+// Current User Profile & Check-in routes
+userRouter
+  .route("/me")
+  .get(catchAsync(getCurrentUser))
+  .patch(validate(updateUserProfileSchema), catchAsync(updateCurrentUser));
 
-userRouter.param("id", loggerMiddlewareFunction(userLogger));
+userRouter.post("/check-in", catchAsync(checkInCurrentUser));
+
+// Collection routes
+userRouter.route("/").get(catchAsync(getAllUsers));
 
 userRouter.get("/count", catchAsync(getUsersCount));
 
@@ -29,6 +41,9 @@ userRouter
     validate(userDefaultTriggerUpdateSchema),
     catchAsync(updateUserDefaultTrigger),
   );
+
+// Individual User Parameter Middleware & Routes
+userRouter.param("id", loggerMiddlewareFunction(userLogger));
 
 userRouter
   .route("/:id")

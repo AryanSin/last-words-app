@@ -1,12 +1,9 @@
 import jwt from "jsonwebtoken";
 
-interface TokenPayload extends jwt.JwtPayload {
+export interface TokenPayload extends jwt.JwtPayload {
   id: number;
-  email: string;
-  name: string;
-  password?: string;
-  lastLoginAt: Date;
-  createdAt: Date;
+  email?: string | null;
+  phoneNumber?: string | null;
 }
 
 export default TokenPayload;

@@ -1,36 +1,45 @@
 import nodemailer from "nodemailer";
 import { buildMessageEmail } from "../templates/emailTemplates";
+import { logger } from "../utils/loggers";
 
 let transporter: nodemailer.Transporter;
 
 export const initializeEmailService = async () => {
-  const testAccount = await nodemailer.createTestAccount();
+  try {
+    const testAccount = await nodemailer.createTestAccount();
 
-  console.log("ETHEREAL TEST ACCOUNT");
-  console.log("EMAIL:", testAccount.user);
-  console.log("PASSWORD:", testAccount.pass);
+    logger.info("ETHEREAL TEST ACCOUNT INITIALIZED");
+    logger.info(`EMAIL: ${testAccount.user}`);
 
-  transporter = nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  });
+    transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+  } catch (err) {
+    logger.error("Failed to initialize Ethereal email test account:", err);
+  }
 };
 
 export const sendEmail = async (
   to: string,
   subject: string,
   content: string,
+  senderName?: string | null,
+  recipientName?: string | null,
 ) => {
   if (!transporter) {
-    throw new Error("Email service not initialized");
+    await initializeEmailService();
+    if (!transporter) {
+      throw new Error("Email service is not initialized");
+    }
   }
 
-  const mail = buildMessageEmail(subject, content);
+  const mail = buildMessageEmail(subject, content, senderName, recipientName);
 
   const info = await transporter.sendMail({
     from: '"Last Words" <noreply@lastwords.com>',
@@ -39,11 +48,8 @@ export const sendEmail = async (
     html: mail.html,
   });
 
-  console.log("Message sent:", info.messageId);
-
   const previewUrl = nodemailer.getTestMessageUrl(info);
+  logger.info(`[EmailService] Message sent: ${info.messageId} | Preview: ${previewUrl}`);
 
-  console.log("Preview URL:", previewUrl);
-
-  return info;
+  return { messageId: info.messageId, previewUrl };
 };

@@ -13,34 +13,47 @@ const userServices = {
   },
 
   getUserById: async (id: number) => {
-    const user = await prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: {
-        id: id,
+        id,
       },
     });
-    return user;
   },
 
   getUserByEmail: async (email: string) => {
-    const user = await prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: {
-        email: email,
+        email,
       },
     });
-    return user;
+  },
+
+  getUserByPhone: async (phoneNumber: string) => {
+    return await prisma.user.findUnique({
+      where: {
+        phoneNumber,
+      },
+    });
+  },
+
+  getUserByGoogleId: async (googleId: string) => {
+    return await prisma.user.findUnique({
+      where: {
+        googleId,
+      },
+    });
   },
 
   getUsers: async (usersProps: {
     select?: Prisma.UserSelect<DefaultArgs> | null | undefined;
     omit?: Prisma.UserOmit<DefaultArgs> | null | undefined;
     include?: Prisma.UserInclude<DefaultArgs> | null | undefined;
-    where?: Prisma.UserWhereUniqueInput;
+    where?: Prisma.UserWhereInput;
     orderBy?: Prisma.UserOrderByWithRelationInput;
     take?: number;
     skip?: number;
   }) => {
-    const users = await prisma.user.findMany(usersProps);
-    return users;
+    return await prisma.user.findMany(usersProps);
   },
 
   getUsersCount: async () => {
@@ -60,9 +73,14 @@ const userServices = {
     },
   ) => {
     return await prisma.user.findUnique({
-      where: { id: id },
+      where: { id },
       select: {
-        messages: messageProps,
+        messages: {
+          ...messageProps,
+          include: {
+            deliveryEvents: true,
+          },
+        },
       },
     });
   },
@@ -88,6 +106,15 @@ const userServices = {
         email,
       },
       data,
+    });
+  },
+
+  touchLastLogin: async (id: number) => {
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        lastLoginAt: new Date(),
+      },
     });
   },
 };

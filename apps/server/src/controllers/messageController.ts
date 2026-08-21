@@ -8,7 +8,7 @@ import {
   toMessageResponseDtoWithMessageStatus,
 } from "../dto/messageDto";
 import messageServices from "../services/messageServices";
-import userServices from "../services/userServices";
+import AppError from "../utils/AppError";
 import { getPagination } from "../utils/pagination";
 import successResponse from "../utils/successResponse";
 
@@ -17,12 +17,18 @@ export const getAllMessages = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const userId = Number(req.user?.id);
+
   const messages = await messageServices.getMessages({
+    where: {
+      userId,
+    },
     orderBy: {
       createdAt: "desc",
     },
     ...getPagination(req),
   });
+
   return successResponse(
     res,
     messages.map(toMessageResponseDtoWithMessageStatus),
@@ -36,8 +42,24 @@ export const createMessage = async (
   next: NextFunction,
 ) => {
   const data = req.parsedData as messageCreationBodyType;
+  const userId = Number(req.user?.id);
 
-  const message = await messageServices.createMessage(data);
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const message = await messageServices.createMessage({
+    title: data.title,
+    content: data.content,
+    recipientName: data.recipientName,
+    recipientEmail: data.recipientEmail || null,
+    recipientPhone: data.recipientPhone || null,
+    deliveryChannel: data.deliveryChannel || "EMAIL",
+    triggerAfterDays: data.triggerAfterDays,
+    user: {
+      connect: { id: userId },
+    },
+  });
 
   return successResponse(res, toMessageResponseDto(message), 201);
 };
@@ -47,9 +69,12 @@ export const getUserMessages = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const id = Number(req.user?.id);
+  const userId = Number(req.user?.id);
 
-  const messages = await userServices.getMessagesByUserId(id, {
+  const messages = await messageServices.getMessages({
+    where: {
+      userId,
+    },
     orderBy: {
       createdAt: "desc",
     },
@@ -58,7 +83,7 @@ export const getUserMessages = async (
 
   return successResponse(
     res,
-    messages?.messages?.map(toMessageResponseDtoWithMessageStatus),
+    messages.map(toMessageResponseDtoWithMessageStatus),
     200,
   );
 };
@@ -69,7 +94,13 @@ export const getMessageById = async (
   next: NextFunction,
 ) => {
   const id = Number(req.params.id);
-  const message = await messageServices.getMessageById(id);
+  const userId = Number(req.user?.id);
+
+  const message = await messageServices.getMessageByIdAndUserId(id, userId);
+
+  if (!message) {
+    throw new AppError("Message not found", 404);
+  }
 
   return successResponse(
     res,
@@ -84,6 +115,12 @@ export const deleteMessageByMessageId = async (
   next: NextFunction,
 ) => {
   const id = Number(req.params.id);
+  const userId = Number(req.user?.id);
+
+  const message = await messageServices.getMessageByIdAndUserId(id, userId);
+  if (!message) {
+    throw new AppError("Message not found", 404);
+  }
 
   await messageServices.deleteMessageById(id);
 
@@ -97,8 +134,37 @@ export const updateMessage = async (
 ) => {
   const data = req.parsedData as updateMessageBodyType;
   const id = Number(req.params.id);
+  const userId = Number(req.user?.id);
 
-  const message = await messageServices.updateMessage(id, data);
+  const message = await messageServices.getMessageByIdAndUserId(id, userId);
+  if (!message) {
+    throw new AppError("Message not found", 404);
+  }
 
-  return successResponse(res, toMessageResponseDto(message), 201);
+  const updatedMessage = await messageServices.updateMessage(id, {
+    title: data.title !== undefined ? data.title : message.title,
+    content: data.content !== undefined ? data.content : message.content,
+    recipientName:
+      data.recipientName !== undefined
+        ? data.recipientName
+        : message.recipientName,
+    recipientEmail:
+      data.recipientEmail !== undefined
+        ? data.recipientEmail || null
+        : message.recipientEmail,
+    recipientPhone:
+      data.recipientPhone !== undefined
+        ? data.recipientPhone || null
+        : message.recipientPhone,
+    deliveryChannel:
+      data.deliveryChannel !== undefined
+        ? data.deliveryChannel
+        : message.deliveryChannel,
+    triggerAfterDays:
+      data.triggerAfterDays !== undefined
+        ? data.triggerAfterDays
+        : message.triggerAfterDays,
+  });
+
+  return successResponse(res, toMessageResponseDto(updatedMessage), 200);
 };
