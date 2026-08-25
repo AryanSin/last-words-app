@@ -1,3 +1,4 @@
+import { MessageStatus } from "@prisma/client";
 import {
   messageCreationBodyType,
   updateMessageBodyType,
@@ -18,20 +19,20 @@ export const getAllMessages = async (
   next: NextFunction,
 ) => {
   const userId = Number(req.user?.id);
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
 
-  const messages = await messageServices.getMessages({
-    where: {
-      userId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    ...getPagination(req),
+  const { take, skip } = getPagination(req);
+  const messages = await messageServices.getMessagesSortedByUrgency({
+    userId,
+    take,
+    skip,
   });
 
   return successResponse(
     res,
-    messages.map(toMessageResponseDtoWithMessageStatus),
+    messages.map(toMessageResponseDtoWithMessageStatus as any),
     200,
   );
 };
@@ -70,20 +71,20 @@ export const getUserMessages = async (
   next: NextFunction,
 ) => {
   const userId = Number(req.user?.id);
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
 
-  const messages = await messageServices.getMessages({
-    where: {
-      userId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    ...getPagination(req),
+  const { take, skip } = getPagination(req);
+  const messages = await messageServices.getMessagesSortedByUrgency({
+    userId,
+    take,
+    skip,
   });
 
   return successResponse(
     res,
-    messages.map(toMessageResponseDtoWithMessageStatus),
+    messages.map(toMessageResponseDtoWithMessageStatus as any),
     200,
   );
 };
@@ -141,6 +142,11 @@ export const updateMessage = async (
     throw new AppError("Message not found", 404);
   }
 
+  // Any message not in delivered (SENT) status is editable
+  if (message.status === MessageStatus.SENT) {
+    throw new AppError("Delivered messages cannot be edited", 400);
+  }
+
   const updatedMessage = await messageServices.updateMessage(id, {
     title: data.title !== undefined ? data.title : message.title,
     content: data.content !== undefined ? data.content : message.content,
@@ -164,7 +170,15 @@ export const updateMessage = async (
       data.triggerAfterDays !== undefined
         ? data.triggerAfterDays
         : message.triggerAfterDays,
+    // Reset failed messages to pending upon successful modification
+    ...(message.status === MessageStatus.FAILED
+      ? { status: MessageStatus.PENDING, failedAttempts: 0, lastError: null }
+      : {}),
   });
 
-  return successResponse(res, toMessageResponseDto(updatedMessage), 200);
+  return successResponse(
+    res,
+    toMessageResponseDtoWithMessageStatus(updatedMessage),
+    200,
+  );
 };

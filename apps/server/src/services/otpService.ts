@@ -9,9 +9,6 @@ const RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutes
 const MAX_OTP_SENDS_IN_WINDOW = 3;
 
 export const otpService = {
-  /**
-   * Generates a 6-digit cryptographic numeric OTP and caches it in Redis with TTL.
-   */
   async generateOtp(phoneNumber: string): Promise<{ otp: string; expiresInSeconds: number }> {
     const rateLimitKey = `otp:ratelimit:${phoneNumber}`;
     const sendCount = await redis.incr(rateLimitKey);
@@ -26,7 +23,6 @@ export const otpService = {
       );
     }
 
-    // Generate secure 6-digit string
     const otp = crypto.randomInt(100000, 1000000).toString();
 
     const codeKey = `otp:code:${phoneNumber}`;
@@ -43,9 +39,6 @@ export const otpService = {
     };
   },
 
-  /**
-   * Verifies the provided OTP against the cached Redis value.
-   */
   async verifyOtp(phoneNumber: string, inputOtp: string): Promise<boolean> {
     const codeKey = `otp:code:${phoneNumber}`;
     const attemptsKey = `otp:attempts:${phoneNumber}`;
@@ -69,7 +62,6 @@ export const otpService = {
       throw new AppError(`Invalid OTP. You have ${remaining} attempt(s) remaining.`, 400);
     }
 
-    // Clean up used OTP upon successful validation
     await redis.del(codeKey);
     await redis.del(attemptsKey);
 

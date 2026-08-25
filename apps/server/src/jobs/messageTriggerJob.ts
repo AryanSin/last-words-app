@@ -1,17 +1,27 @@
 import cron from "node-cron";
 import { runMessageTriggerService } from "../services/messageTriggerService";
+import { logger } from "../utils/loggers";
 
 let isRunning = false;
 
-const messageTriggerJob = cron.schedule("0 0 * * *", async () => {
-  if (isRunning) return;
+// Default: Runs daily at midnight (0 0 * * *)
+export const MESSAGE_TRIGGER_CRON = process.env.MESSAGE_TRIGGER_CRON || "0 0 * * *";
 
-  isRunning = true;
-  try {
-    await runMessageTriggerService();
-  } finally {
-    isRunning = false;
-  }
-});
+const messageTriggerJob = cron.schedule(
+  MESSAGE_TRIGGER_CRON,
+  async () => {
+    if (isRunning) return;
+
+    isRunning = true;
+    try {
+      logger.info("[Cron] Running scheduled message trigger check...");
+      await runMessageTriggerService();
+    } catch (err) {
+      logger.error("[Cron] Message trigger cron job failed:", err);
+    } finally {
+      isRunning = false;
+    }
+  },
+);
 
 export default messageTriggerJob;

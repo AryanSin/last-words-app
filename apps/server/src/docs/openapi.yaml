@@ -1,0 +1,873 @@
+openapi: 3.0.3
+info:
+  title: Last Words API
+  description: >
+    API for Last Words — an automated dead man's switch messaging platform
+    that dispatches scheduled or inactivity-triggered messages via Email and WhatsApp.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your access token in the format 'Bearer <token>'
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          example: Alice Johnson
+        email:
+          type: string
+          format: email
+          example: alice@example.com
+        password:
+          type: string
+          format: password
+          description: Minimum 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol
+          example: SecurePass123!
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: alice@example.com
+        password:
+          type: string
+          example: SecurePass123!
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: a4b1c2d3e4f5...
+
+    GoogleAuthRequest:
+      type: object
+      required:
+        - idToken
+      properties:
+        idToken:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6...
+
+    SendOtpRequest:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: E.164 international phone number format
+          example: "+14155552671"
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - phoneNumber
+        - otp
+      properties:
+        phoneNumber:
+          type: string
+          example: "+14155552671"
+        otp:
+          type: string
+          description: 6-digit numeric OTP code
+          example: "123456"
+        name:
+          type: string
+          example: Alice Johnson
+
+    RegisterPushTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Expo push token or device identifier
+          example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+        platform:
+          type: string
+          enum: [ios, android, web, mobile]
+          default: mobile
+          example: ios
+
+    DeletePushTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        title:
+          type: string
+          example: In the event of my absence...
+        content:
+          type: string
+          example: "Here is the master vault key: 987-XYZ-456"
+        recipientName:
+          type: string
+          example: Bob Johnson
+        recipientEmail:
+          type: string
+          format: email
+          example: bob@example.com
+        recipientPhone:
+          type: string
+          example: "+14155559876"
+        deliveryChannel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+          default: EMAIL
+        triggerAfterDays:
+          type: integer
+          description: Custom inactivity days before triggering (overrides user default)
+          example: 60
+
+    UpdateMessageRequest:
+      type: object
+      description: Any message not in SENT status can be updated. Updating a FAILED message resets its status to PENDING for retry.
+      properties:
+        title:
+          type: string
+          example: Updated Secret Vault Instructions
+        content:
+          type: string
+          example: "Updated keys: ABC-789-XYZ"
+        recipientName:
+          type: string
+          example: Bob Johnson
+        recipientEmail:
+          type: string
+          format: email
+          example: bob@example.com
+        recipientPhone:
+          type: string
+          example: "+14155559876"
+        deliveryChannel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+        triggerAfterDays:
+          type: integer
+          example: 30
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Alice Johnson
+        email:
+          type: string
+          format: email
+          example: alice@example.com
+        phoneNumber:
+          type: string
+          example: "+14155552671"
+        defaultTriggerAfterDays:
+          type: integer
+          minimum: 1
+          example: 180
+
+    UpdateDefaultTriggerRequest:
+      type: object
+      required:
+        - defaultTriggerAfterDays
+      properties:
+        defaultTriggerAfterDays:
+          type: integer
+          minimum: 1
+          example: 90
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Alice Johnson
+        email:
+          type: string
+          example: alice@example.com
+        phoneNumber:
+          type: string
+          example: "+14155552671"
+        avatarUrl:
+          type: string
+          nullable: true
+        isEmailVerified:
+          type: boolean
+        isPhoneVerified:
+          type: boolean
+        authProviders:
+          type: array
+          items:
+            type: string
+            enum: [LOCAL, GOOGLE, WHATSAPP]
+        lastLoginAt:
+          type: string
+          format: date-time
+        defaultTriggerAfterDays:
+          type: integer
+          example: 365
+
+    AuthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            expiresIn:
+              type: integer
+              example: 604800
+            user:
+              $ref: '#/components/schemas/UserResponse'
+
+    SoonestMessageDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 25
+        title:
+          type: string
+          nullable: true
+          example: Family Access Credentials
+        recipientName:
+          type: string
+          nullable: true
+          example: Alice
+        deliveryChannel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+          example: EMAIL
+        triggerAfterDays:
+          type: integer
+          example: 10
+        daysRemaining:
+          type: integer
+          example: 6
+
+    SwitchStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            daysRemaining:
+              type: integer
+              description: Minimum days remaining until the soonest pending message triggers (or default if no pending messages)
+              example: 6
+            daysPassed:
+              type: integer
+              description: Number of days passed since last confirmed check-in
+              example: 4
+            lastLoginAt:
+              type: string
+              format: date-time
+              example: "2026-08-20T08:17:03.501Z"
+            inactivityThreshold:
+              type: integer
+              description: Effective threshold in days
+              example: 10
+            hasPendingMessages:
+              type: boolean
+              example: true
+            totalMessages:
+              type: integer
+              example: 5
+            pendingMessages:
+              type: integer
+              example: 2
+            isUrgent:
+              type: boolean
+              description: True if daysRemaining is 7 or fewer
+              example: true
+            soonestMessage:
+              $ref: '#/components/schemas/SoonestMessageDto'
+              nullable: true
+
+    DeliveryEventDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        channel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+        recipient:
+          type: string
+        success:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    MessageResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          nullable: true
+          example: Secret Vault Credentials
+        content:
+          type: string
+          example: "Vault combination: 12-34-56"
+        recipientName:
+          type: string
+          nullable: true
+          example: Bob Johnson
+        recipientEmail:
+          type: string
+          nullable: true
+          example: bob@example.com
+        recipientPhone:
+          type: string
+          nullable: true
+          example: "+14155559876"
+        deliveryChannel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+          example: EMAIL
+        status:
+          type: string
+          enum: [PENDING, SENT, FAILED]
+          example: PENDING
+        triggerAfterDays:
+          type: integer
+          nullable: true
+          example: 60
+        daysRemaining:
+          type: integer
+          example: 14
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+        failedAttempts:
+          type: integer
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deliveryEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryEventDto'
+
+    PushReminderSummaryResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            totalUsersChecked:
+              type: integer
+              example: 45
+            notificationsSent:
+              type: integer
+              example: 12
+            inactivityWarningsCount:
+              type: integer
+              example: 8
+            heartbeatRemindersCount:
+              type: integer
+              example: 4
+
+    SystemMetricsResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            totalEmailsSent:
+              type: integer
+              example: 142
+            totalEmailFailures:
+              type: integer
+              example: 3
+            totalWhatsAppSent:
+              type: integer
+              example: 88
+            totalWhatsAppFail:
+              type: integer
+              example: 1
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      tags: [System]
+      responses:
+        '200':
+          description: API is healthy and operational
+
+  /:
+    get:
+      summary: API root information
+      tags: [System]
+      responses:
+        '200':
+          description: API details and version
+
+  # ----------------------------------------------------
+  # AUTHENTICATION ROUTES (/auth) - Rate Limit: 20 req/min
+  # ----------------------------------------------------
+  /auth/register:
+    post:
+      summary: Register a new user with email and password
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+        '409':
+          description: Email already registered
+
+  /auth/login:
+    post:
+      summary: Login with email and password
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Rotate and refresh access token using refresh token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New token pair issued
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      summary: Logout user and revoke refresh token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Successfully logged out
+
+  /auth/google:
+    post:
+      summary: Authenticate with Google ID Token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Google authentication successful
+
+  /auth/whatsapp/send-otp:
+    post:
+      summary: Send OTP code to WhatsApp phone number
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpRequest'
+      responses:
+        '200':
+          description: OTP dispatched
+
+  /auth/whatsapp/verify-otp:
+    post:
+      summary: Verify WhatsApp OTP and login / create account
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: OTP verified and token pair issued
+
+  /auth/check-in:
+    post:
+      summary: User heartbeat check-in to reset inactivity timer
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Check-in recorded and lastLoginAt updated
+
+  # ----------------------------------------------------
+  # USER & SWITCH ROUTES (/users) - Rate Limit: 60 req/min
+  # ----------------------------------------------------
+  /users/me:
+    get:
+      summary: Get current authenticated user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+    patch:
+      summary: Update user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+
+  /users/switch-status:
+    get:
+      summary: Get real-time inactivity switch status (calculated by soonest pending message)
+      description: Returns the minimum days remaining until the soonest pending message is triggered, rather than just default account threshold.
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Switch status calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwitchStatusResponse'
+
+  /users/check-in:
+    post:
+      summary: Trigger check-in heartbeat to reset inactivity switch
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Check-in successful and timer reset
+
+  /users/push-token:
+    post:
+      summary: Register or sync mobile device push token
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPushTokenRequest'
+      responses:
+        '200':
+          description: Push token registered successfully
+    delete:
+      summary: Unregister device push token (on logout)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeletePushTokenRequest'
+      responses:
+        '200':
+          description: Push token removed successfully
+
+  /users/{id}/default-trigger:
+    patch:
+      summary: Update user default inactivity trigger duration in days
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDefaultTriggerRequest'
+      responses:
+        '200':
+          description: Default trigger duration updated
+
+  # ----------------------------------------------------
+  # MESSAGE ROUTES (/messages) - Rate Limit: 60 req/min
+  # ----------------------------------------------------
+  /messages:
+    post:
+      summary: Create a new message in the vault
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: Message created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/MessageResponse'
+    get:
+      summary: List user vault messages (sorted by urgency on top)
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Paginated messages list sorted by days remaining
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MessageResponse'
+
+  /messages/{id}:
+    get:
+      summary: Get complete message details by ID with delivery events
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Message details and delivery audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/MessageResponse'
+    patch:
+      summary: Update non-delivered message (PENDING or FAILED)
+      description: Allows editing any message not yet in SENT status. Editing a FAILED message resets its status to PENDING for retry.
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMessageRequest'
+      responses:
+        '200':
+          description: Message updated and reset to PENDING if previously failed
+        '400':
+          description: Delivered (SENT) messages cannot be edited
+    delete:
+      summary: Permanently delete message from vault
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Message deleted
+
+  # ----------------------------------------------------
+  # METRICS ROUTES (/metrics) - Rate Limit: 30 req/min
+  # ----------------------------------------------------
+  /metrics/messages:
+    get:
+      summary: Get aggregated system delivery metrics
+      tags: [Metrics]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Delivery metrics counters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetricsResponse'
+
+  # ----------------------------------------------------
+  # BACKGROUND JOB ROUTES (/jobs) - Rate Limit: 10 req/min
+  # ----------------------------------------------------
+  /jobs/trigger-message:
+    post:
+      summary: Manually trigger the message evaluation & dispatch engine
+      tags: [Jobs]
+      responses:
+        '200':
+          description: Overdue messages enqueued to BullMQ delivery queue
+
+  /jobs/trigger-reminders:
+    post:
+      summary: Manually trigger mobile push notification reminder engine
+      description: Dispatches imminent dispatch warnings (messages due within 7 days) and weekly heartbeat check-in reminders to registered mobile devices.
+      tags: [Jobs]
+      responses:
+        '200':
+          description: Push reminders evaluated and dispatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushReminderSummaryResponse'

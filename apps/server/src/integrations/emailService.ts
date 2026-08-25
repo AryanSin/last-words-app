@@ -8,8 +8,7 @@ export const initializeEmailService = async () => {
   try {
     const testAccount = await nodemailer.createTestAccount();
 
-    logger.info("ETHEREAL TEST ACCOUNT INITIALIZED");
-    logger.info(`EMAIL: ${testAccount.user}`);
+    logger.info(`Initialized test email transport (${testAccount.user})`);
 
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",

@@ -41,7 +41,6 @@ export const sendMessages = async (messages: minimalMessageWithUser[]) => {
         const targetEmail = message.recipientEmail || message.user.email;
         const targetPhone = message.recipientPhone || message.user.phoneNumber;
 
-        // 1. Send Email if channel is EMAIL or BOTH
         if (channel === DeliveryChannel.EMAIL || channel === DeliveryChannel.BOTH) {
           if (targetEmail) {
             try {
@@ -74,7 +73,6 @@ export const sendMessages = async (messages: minimalMessageWithUser[]) => {
           }
         }
 
-        // 2. Send WhatsApp if channel is WHATSAPP or BOTH
         if (channel === DeliveryChannel.WHATSAPP || channel === DeliveryChannel.BOTH) {
           if (targetPhone) {
             try {

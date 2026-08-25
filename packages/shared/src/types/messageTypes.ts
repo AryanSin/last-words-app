@@ -31,4 +31,5 @@ export interface messageWithStatusDto extends messageDto {
   lastError?: string | null;
   status: MessageStatusType;
   deliveryEvents?: DeliveryEventDto[];
+  daysRemaining?: number;
 }

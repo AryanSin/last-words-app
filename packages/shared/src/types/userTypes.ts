@@ -19,3 +19,24 @@ export interface userDto {
 export interface userWithMessageDto extends userDto {
   messages: messageWithStatusDto[];
 }
+
+export interface SoonestMessageDto {
+  id: number;
+  title: string | null;
+  recipientName: string | null;
+  deliveryChannel: "EMAIL" | "WHATSAPP" | "BOTH";
+  triggerAfterDays: number;
+  daysRemaining: number;
+}
+
+export interface SwitchStatusDto {
+  daysRemaining: number;
+  daysPassed: number;
+  lastLoginAt: string;
+  inactivityThreshold: number;
+  hasPendingMessages: boolean;
+  totalMessages: number;
+  pendingMessages: number;
+  isUrgent: boolean;
+  soonestMessage: SoonestMessageDto | null;
+}

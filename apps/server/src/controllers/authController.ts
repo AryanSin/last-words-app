@@ -2,6 +2,7 @@ import { AuthProvider } from "@prisma/client";
 import {
   googleAuthType,
   loginUserType,
+  refreshTokenType,
   registerUserType,
   sendOtpType,
   verifyOtpType,
@@ -15,7 +16,11 @@ import authServices from "../services/authServices";
 import otpService from "../services/otpService";
 import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
-import { generateToken } from "../utils/authUtility";
+import {
+  generateTokens,
+  revokeRefreshToken,
+  rotateRefreshToken,
+} from "../utils/authUtility";
 import successResponse from "../utils/successResponse";
 
 export const createUser = async (
@@ -41,11 +46,14 @@ export const createUser = async (
     lastLoginAt: new Date(),
   });
 
-  const token = generateToken(user);
+  const tokens = await generateTokens(user);
 
   return successResponse(
     res,
-    { token, user: toUserResponseDtoMinimal(user) },
+    {
+      ...tokens,
+      user: toUserResponseDtoMinimal(user),
+    },
     201,
   );
 };
@@ -70,11 +78,14 @@ export const handleLogin = async (
   }
 
   const updatedUser = await userServices.touchLastLogin(user.id);
-  const token = generateToken(updatedUser);
+  const tokens = await generateTokens(updatedUser);
 
   return successResponse(
     res,
-    { token, user: toUserResponseDtoMinimal(updatedUser) },
+    {
+      ...tokens,
+      user: toUserResponseDtoMinimal(updatedUser),
+    },
     200,
   );
 };
@@ -88,11 +99,14 @@ export const handleGoogleAuth = async (
 
   const googleUserInfo = await googleAuthService.verifyIdToken(idToken);
   const user = await authServices.findOrCreateGoogleUser(googleUserInfo);
-  const token = generateToken(user);
+  const tokens = await generateTokens(user);
 
   return successResponse(
     res,
-    { token, user: toUserResponseDtoMinimal(user) },
+    {
+      ...tokens,
+      user: toUserResponseDtoMinimal(user),
+    },
     200,
   );
 };
@@ -135,11 +149,48 @@ export const verifyWhatsAppOtp = async (
   await otpService.verifyOtp(phoneNumber, otp);
 
   const user = await authServices.findOrCreateWhatsAppUser(phoneNumber, name);
-  const token = generateToken(user);
+  const tokens = await generateTokens(user);
 
   return successResponse(
     res,
-    { token, user: toUserResponseDtoMinimal(user) },
+    {
+      ...tokens,
+      user: toUserResponseDtoMinimal(user),
+    },
+    200,
+  );
+};
+
+export const handleRefreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { refreshToken } = req.parsedData as refreshTokenType;
+  const result = await rotateRefreshToken(refreshToken);
+
+  return successResponse(
+    res,
+    {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
+    },
+    200,
+  );
+};
+
+export const handleLogout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { refreshToken } = req.parsedData as refreshTokenType;
+  await revokeRefreshToken(refreshToken);
+
+  return successResponse(
+    res,
+    { message: "Logged out successfully. Refresh token revoked." },
     200,
   );
 };
@@ -165,3 +216,4 @@ export const handleCheckIn = async (
     200,
   );
 };
+

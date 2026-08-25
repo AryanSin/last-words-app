@@ -15,3 +15,16 @@ export const updateUserProfileSchema = z
     defaultTriggerAfterDays: z.number().int().positive().optional(),
   })
   .strict();
+
+export const registerPushTokenSchema = z
+  .object({
+    token: z.string().min(5, "Push token cannot be empty"),
+    platform: z.enum(["ios", "android", "web", "mobile"]).optional(),
+  })
+  .strict();
+
+export const deletePushTokenSchema = z
+  .object({
+    token: z.string().min(5, "Push token cannot be empty"),
+  })
+  .strict();

@@ -4,7 +4,7 @@ export interface ApiResponse<T> {
   requestedAt: string;
 }
 
-export interface ErrrorResponse {
+export interface ErrorResponse {
   status: "error";
   message: string;
 }

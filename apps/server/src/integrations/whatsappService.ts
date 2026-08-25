@@ -23,17 +23,9 @@ export interface IWhatsAppService {
   ): Promise<WhatsAppSendResult>;
 }
 
-/**
- * Development Mock WhatsApp Service - logs formatted messages to console & loggers.
- */
 class DevWhatsAppService implements IWhatsAppService {
   async sendOtp(phoneNumber: string, otp: string): Promise<WhatsAppSendResult> {
-    const banner = `
-================== [WHATSAPP DEV MOCK - OTP] ==================
-To: ${phoneNumber}
-Message: Your Last Words verification code is: ${otp}. Valid for 5 minutes.
-===============================================================`;
-    console.log(banner);
+    console.log(`[dev-whatsapp] OTP -> ${phoneNumber}: ${otp}`);
     logger.info(`[DevWhatsApp] OTP sent to ${phoneNumber}: ${otp}`);
     return { success: true, messageId: `mock-otp-${Date.now()}` };
   }
@@ -43,22 +35,12 @@ Message: Your Last Words verification code is: ${otp}. Valid for 5 minutes.
     content: string,
     title?: string,
   ): Promise<WhatsAppSendResult> {
-    const banner = `
-============== [WHATSAPP DEV MOCK - DISPATCH] ================
-To: ${phoneNumber}
-Title: ${title || "Important message from Last Words"}
-Body:
-${content}
-===============================================================`;
-    console.log(banner);
+    console.log(`[dev-whatsapp] Message -> ${phoneNumber} | ${title || "No Title"}\n${content}`);
     logger.info(`[DevWhatsApp] Message delivered to ${phoneNumber}`);
     return { success: true, messageId: `mock-msg-${Date.now()}` };
   }
 }
 
-/**
- * Twilio WhatsApp Service implementation.
- */
 class TwilioWhatsAppService implements IWhatsAppService {
   private getAuthHeader(): string {
     return `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`;
@@ -128,9 +110,6 @@ class TwilioWhatsAppService implements IWhatsAppService {
   }
 }
 
-/**
- * Meta Cloud WhatsApp API implementation.
- */
 class MetaCloudWhatsAppService implements IWhatsAppService {
   async sendOtp(phoneNumber: string, otp: string): Promise<WhatsAppSendResult> {
     const text = `Your Last Words verification code is: ${otp}. Valid for 5 minutes.`;

@@ -1,4 +1,6 @@
 import {
+  deletePushTokenSchema,
+  registerPushTokenSchema,
   updateUserProfileSchema,
   userDefaultTriggerUpdateSchema,
 } from "@shared/schemas/userSchemas";
@@ -8,27 +10,46 @@ import {
   deleteUserById,
   getAllUsers,
   getCurrentUser,
+  getCurrentUserSwitchStatus,
   getMessagesByUserId,
   getUserById,
   getUsersCount,
+  registerPushToken,
+  removePushToken,
   updateCurrentUser,
   updateUserDefaultTrigger,
 } from "../controllers/userController";
+import userRateLimiter from "../middleware/rateLimiter/userRateLimiter";
 import validate from "../middleware/validate";
 import { catchAsync } from "../utils/catchAsync";
 import { loggerMiddlewareFunction, userLogger } from "../utils/loggers";
 
 const userRouter = express.Router();
 
-// Current User Profile & Check-in routes
+userRouter.use(userRateLimiter);
+
 userRouter
   .route("/me")
   .get(catchAsync(getCurrentUser))
   .patch(validate(updateUserProfileSchema), catchAsync(updateCurrentUser));
 
+userRouter.get("/switch-status", catchAsync(getCurrentUserSwitchStatus));
+userRouter.get("/me/switch-status", catchAsync(getCurrentUserSwitchStatus));
+
 userRouter.post("/check-in", catchAsync(checkInCurrentUser));
 
-// Collection routes
+userRouter.post(
+  "/push-token",
+  validate(registerPushTokenSchema),
+  catchAsync(registerPushToken),
+);
+
+userRouter.delete(
+  "/push-token",
+  validate(deletePushTokenSchema),
+  catchAsync(removePushToken),
+);
+
 userRouter.route("/").get(catchAsync(getAllUsers));
 
 userRouter.get("/count", catchAsync(getUsersCount));
@@ -42,7 +63,6 @@ userRouter
     catchAsync(updateUserDefaultTrigger),
   );
 
-// Individual User Parameter Middleware & Routes
 userRouter.param("id", loggerMiddlewareFunction(userLogger));
 
 userRouter

@@ -11,11 +11,14 @@ import {
   getUserMessages,
   updateMessage,
 } from "../controllers/messageController";
+import messageRateLimiter from "../middleware/rateLimiter/messageRateLimiter";
 import validate from "../middleware/validate";
 import { catchAsync } from "../utils/catchAsync";
 import { loggerMiddlewareFunction, messageLogger } from "../utils/loggers";
 
 const messageRouter = express.Router();
+
+messageRouter.use(messageRateLimiter);
 
 messageRouter
   .route("/")

@@ -8,22 +8,27 @@ export const globalErrorHandler = (
   res: Response,
   next: NextFunction,
 ) => {
-  // Default values
   let statusCode = err.statusCode || 500;
   let message = err.message || "Something went wrong";
 
-  // Handle known errors
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
+  } else if (err.name === "TokenExpiredError") {
+    statusCode = 401;
+    message = "Access token has expired. Please refresh your session.";
+  } else if (err.name === "JsonWebTokenError") {
+    statusCode = 401;
+    message = "Invalid access token.";
   }
 
-  // Log error (important)
-  errorLogger("Error 💥:" + err);
-  console.error("ERROR 💥:", err);
+  errorLogger(err?.message || String(err));
+  if (statusCode === 500) {
+    console.error(err);
+  }
 
   res.status(statusCode).json({
-    status: "error",
+    status: statusCode >= 500 ? "error" : "fail",
     message,
   });
 };

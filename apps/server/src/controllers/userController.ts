@@ -1,4 +1,6 @@
 import {
+  deletePushTokenType,
+  registerPushTokenType,
   updateUserProfileType,
   userDefaultTriggerUpdateType,
 } from "@shared/types/apiTypes";
@@ -6,6 +8,7 @@ import { userDto } from "@shared/types/userTypes";
 import { NextFunction, Request, Response } from "express";
 import { toMessageResponseDtoWithMessageStatus } from "../dto/messageDto";
 import { toUserResponseDtoMinimal } from "../dto/userDto";
+import pushNotificationService from "../services/pushNotificationService";
 import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
 import { getPagination } from "../utils/pagination";
@@ -22,6 +25,18 @@ export const getCurrentUser = async (
   if (!user) throw new AppError("User not found", 404);
 
   return successResponse(res, toUserResponseDtoMinimal(user), 200);
+};
+
+export const getCurrentUserSwitchStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const id = Number(req.user?.id);
+  if (!id) throw new AppError("Unauthorized", 401);
+
+  const status = await userServices.getUserSwitchStatus(id);
+  return successResponse(res, status, 200);
 };
 
 export const updateCurrentUser = async (
@@ -66,6 +81,54 @@ export const checkInCurrentUser = async (
     {
       message: "Check-in successful! Inactivity timer reset.",
       lastLoginAt: updatedUser.lastLoginAt,
+    },
+    200,
+  );
+};
+
+export const registerPushToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userId = Number(req.user?.id);
+  const { token, platform } = req.parsedData as registerPushTokenType;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const device = await pushNotificationService.registerDeviceToken(
+    userId,
+    token,
+    platform || "mobile",
+  );
+
+  return successResponse(
+    res,
+    {
+      message: "Push token registered successfully",
+      token: device.token,
+      platform: device.platform,
+    },
+    200,
+  );
+};
+
+export const removePushToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userId = Number(req.user?.id);
+  const { token } = req.parsedData as deletePushTokenType;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  await pushNotificationService.removeDeviceToken(userId, token);
+
+  return successResponse(
+    res,
+    {
+      message: "Push token removed successfully",
     },
     200,
   );

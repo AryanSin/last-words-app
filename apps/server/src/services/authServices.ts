@@ -12,13 +12,11 @@ const authServices = {
   },
 
   findOrCreateGoogleUser: async (googleUser: GoogleUserInfo) => {
-    // Check if user already exists by googleId
     let user = await prisma.user.findUnique({
       where: { googleId: googleUser.googleId },
     });
 
     if (user) {
-      // Update last login and profile info
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -31,13 +29,11 @@ const authServices = {
       return user;
     }
 
-    // Check if user exists with matching email
     user = await prisma.user.findUnique({
       where: { email: googleUser.email },
     });
 
     if (user) {
-      // Link Google Account to existing user
       const existingProviders = user.authProviders || [];
       const updatedProviders = existingProviders.includes(AuthProvider.GOOGLE)
         ? existingProviders
@@ -57,7 +53,6 @@ const authServices = {
       return user;
     }
 
-    // Create new Google user
     return await prisma.user.create({
       data: {
         email: googleUser.email,

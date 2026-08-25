@@ -50,3 +50,10 @@ export const verifyOtpSchema = z
     name: z.string().min(2).max(50).optional(),
   })
   .strict();
+
+export const refreshTokenSchema = z
+  .object({
+    refreshToken: z.string().min(1, "Refresh token is required"),
+  })
+  .strict();
+

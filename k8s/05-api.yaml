@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: last-words-api-service
+  namespace: last-words
+  labels:
+    app: last-words-api
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30080
+      name: http
+  selector:
+    app: last-words-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: last-words-api
+  namespace: last-words
+  labels:
+    app: last-words-api
+spec:
+  # 2 Replicas: If 1 pod crashes or fails, the other serves traffic while K8s auto-heals
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: last-words-api
+  template:
+    metadata:
+      labels:
+        app: last-words-api
+    spec:
+      # Wait for DB and Redis before starting API containers
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z postgres-service.last-words.svc.cluster.local 5432; do echo waiting for postgres; sleep 2; done;",
+            ]
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z redis-service.last-words.svc.cluster.local 6379; do echo waiting for redis; sleep 2; done;",
+            ]
+      containers:
+        - name: api
+          image: last-words-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: last-words-config
+            - secretRef:
+                name: last-words-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          # Self-healing probes checking API health
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2

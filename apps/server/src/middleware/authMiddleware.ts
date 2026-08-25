@@ -41,16 +41,33 @@ export const authenticateToken = async (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({
-      message: "Unauthorized. No token provided.",
-    });
+    throw new AppError("Unauthorized. No token provided.", 401);
   }
 
-  const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
-  const user = await userServices.getUserById(Number(decoded.id));
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const user = await userServices.getUserById(Number(decoded.id));
 
-  if (!user) throw new AppError("User with given emailId not found", 404);
-  req.user = user;
+    if (!user) {
+      throw new AppError("User account not found", 404);
+    }
 
-  next();
+    req.user = user;
+    req.userId = user.id;
+
+    next();
+  } catch (err: any) {
+    if (err instanceof AppError) {
+      return next(err);
+    }
+    if (err.name === "TokenExpiredError") {
+      return next(
+        new AppError("Access token has expired. Please refresh session.", 401),
+      );
+    }
+    if (err.name === "JsonWebTokenError") {
+      return next(new AppError("Invalid access token", 401));
+    }
+    return next(err);
+  }
 };

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: last-words-config
+  namespace: last-words
+data:
+  PORT: "3000"
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  REDIS_HOST: "redis-service.last-words.svc.cluster.local"
+  REDIS_PORT: "6379"
+  WHATSAPP_PROVIDER: "dev"

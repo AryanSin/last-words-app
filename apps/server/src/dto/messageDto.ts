@@ -35,7 +35,10 @@ export const toMessageResponseDto = (message: Message): messageDto => {
 };
 
 export const toMessageResponseDtoWithMessageStatus = (
-  message: Message & { deliveryEvents?: DeliveryEvent[] },
+  message: Message & {
+    deliveryEvents?: DeliveryEvent[];
+    daysRemaining?: number;
+  },
 ): messageWithStatusDto => {
   return {
     ...toMessageResponseDto(message),
@@ -44,5 +47,6 @@ export const toMessageResponseDtoWithMessageStatus = (
     lastError: message.lastError,
     status: message.status as any,
     deliveryEvents: message.deliveryEvents?.map(toDeliveryEventDto),
+    daysRemaining: message.daysRemaining,
   };
 };
