@@ -3,6 +3,7 @@ import { DefaultArgs } from "@prisma/client/runtime/library";
 import { SwitchStatusDto } from "@shared/types/userTypes";
 import prisma from "../config/prisma";
 import AppError from "../utils/AppError";
+import { decryptMessageList, decryptMessageNullable } from "../utils/crypto";
 
 const userServices = {
   checkUserExistsById: async (id: number) => {
@@ -74,7 +75,7 @@ const userServices = {
       take?: number;
     },
   ) => {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id },
       select: {
         messages: {
@@ -85,6 +86,14 @@ const userServices = {
         },
       },
     });
+
+    if (user && user.messages) {
+      return {
+        ...user,
+        messages: decryptMessageList(user.messages),
+      };
+    }
+    return user;
   },
 
   getUserSwitchStatus: async (userId: number): Promise<SwitchStatusDto> => {
@@ -168,7 +177,7 @@ const userServices = {
       isUrgent: soonestResult.daysRemaining <= 7,
       soonestMessage: {
         id: soonestResult.message.id,
-        title: soonestResult.message.title,
+        title: decryptMessageNullable(soonestResult.message.title),
         recipientName: soonestResult.message.recipientName,
         deliveryChannel: soonestResult.message.deliveryChannel,
         triggerAfterDays: soonestResult.triggerThreshold,

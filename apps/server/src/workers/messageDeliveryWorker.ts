@@ -9,6 +9,7 @@ import {
   MESSAGE_DELIVERY_QUEUE_NAME,
   MessageDeliveryJobData,
 } from "../queues/messageDeliveryQueue";
+import { decryptMessage, decryptMessageNullable } from "../utils/crypto";
 import { logger, messageJobLogger } from "../utils/loggers";
 
 export const processDeliveryJob = async (
@@ -41,6 +42,16 @@ export const processDeliveryJob = async (
     return { skipped: true, reason: "Already sent" };
   }
 
+  let plainContent = message.content;
+  let plainTitle = message.title;
+  try {
+    plainContent = decryptMessage(message.content);
+    plainTitle = decryptMessageNullable(message.title);
+  } catch (err: any) {
+    logger.error(`[Worker] Decryption failed for message ${messageId}:`, err);
+    throw new Error(`Message decryption failed: ${err?.message || err}`);
+  }
+
   const channel = message.deliveryChannel;
   const targetEmail = message.recipientEmail || message.user.email;
   const targetPhone = message.recipientPhone || message.user.phoneNumber;
@@ -60,11 +71,11 @@ export const processDeliveryJob = async (
     if (targetEmail) {
       try {
         const subject =
-          message.title || `Message from ${message.user.name || "Last Words"}`;
+          plainTitle || `Message from ${message.user.name || "Last Words"}`;
         await sendEmail(
           targetEmail,
           subject,
-          message.content,
+          plainContent,
           message.user.name,
           message.recipientName,
         );
@@ -100,8 +111,8 @@ export const processDeliveryJob = async (
       try {
         const waResult = await whatsappService.sendMessage(
           targetPhone,
-          message.content,
-          message.title || undefined,
+          plainContent,
+          plainTitle || undefined,
         );
 
         if (waResult.success) {

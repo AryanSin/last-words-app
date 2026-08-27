@@ -3,6 +3,7 @@ import { sendEmail } from "../integrations/emailService";
 import { whatsappService } from "../integrations/whatsappService";
 import { minimalMessageWithUser } from "../interfaces/messageInterfaces";
 import { emailQueue } from "../queues/emailQueue";
+import { decryptMessage, decryptMessageNullable } from "../utils/crypto";
 import { logger, messageJobLogger } from "../utils/loggers";
 
 const logMessageJobInfo = (argString = "", ...args: unknown[]) => {
@@ -33,6 +34,16 @@ export const sendMessages = async (messages: minimalMessageWithUser[]) => {
       emailQueue.add(async (): Promise<MessageDeliveryResult> => {
         logMessageJobInfo(`Processing message ${message.id} for user ${message.user.id}`);
 
+        let plainContent = message.content;
+        let plainTitle = message.title;
+        try {
+          plainContent = decryptMessage(message.content);
+          plainTitle = decryptMessageNullable(message.title);
+        } catch (err: any) {
+          logMessageJobError(`Failed to decrypt message ID ${message.id}:`, err);
+          throw new Error(`Message decryption failed: ${err?.message || err}`);
+        }
+
         const deliveryEvents: MessageDeliveryResult["events"] = [];
         let anySuccess = false;
         const errors: string[] = [];
@@ -44,11 +55,11 @@ export const sendMessages = async (messages: minimalMessageWithUser[]) => {
         if (channel === DeliveryChannel.EMAIL || channel === DeliveryChannel.BOTH) {
           if (targetEmail) {
             try {
-              const subject = message.title || `Message from ${message.user.name || "Last Words"}`;
+              const subject = plainTitle || `Message from ${message.user.name || "Last Words"}`;
               await sendEmail(
                 targetEmail,
                 subject,
-                message.content,
+                plainContent,
                 message.user.name,
                 message.recipientName,
               );
@@ -78,8 +89,8 @@ export const sendMessages = async (messages: minimalMessageWithUser[]) => {
             try {
               const waResult = await whatsappService.sendMessage(
                 targetPhone,
-                message.content,
-                message.title || undefined,
+                plainContent,
+                plainTitle || undefined,
               );
 
               if (waResult.success) {

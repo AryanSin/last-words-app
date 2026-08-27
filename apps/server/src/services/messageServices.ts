@@ -1,6 +1,12 @@
 import { Message, Prisma } from "@prisma/client";
 import { DefaultArgs } from "@prisma/client/runtime/library";
 import prisma from "../config/prisma";
+import {
+  decryptMessageList,
+  decryptMessageObject,
+  encryptMessage,
+  encryptMessageNullable,
+} from "../utils/crypto";
 
 const messageServices = {
   getMessages: async (messageProps: {
@@ -12,10 +18,11 @@ const messageServices = {
     take?: number;
     skip?: number;
   }) => {
-    return await prisma.message.findMany({
+    const messages = await prisma.message.findMany({
       ...messageProps,
       include: messageProps.include || { deliveryEvents: true },
     });
+    return decryptMessageList(messages);
   },
 
   // Pending messages first ordered by trigger proximity, followed by resolved messages
@@ -94,7 +101,7 @@ const messageServices = {
       OFFSET ${skip}
     `;
 
-    return rawMessages;
+    return decryptMessageList(rawMessages);
   },
 
   getMessagesCountByUserId: async (userId: number) => {
@@ -109,30 +116,48 @@ const messageServices = {
       Prisma.MessageUncheckedCreateInput
     >,
   ) => {
-    return await prisma.message.create({
-      data,
+    const encryptedData = {
+      ...data,
+      content:
+        typeof data.content === "string"
+          ? encryptMessage(data.content)
+          : data.content,
+      title:
+        typeof data.title === "string"
+          ? encryptMessageNullable(data.title)
+          : data.title,
+    };
+
+    const message = await prisma.message.create({
+      data: encryptedData as any,
       include: {
         deliveryEvents: true,
       },
     });
+
+    return decryptMessageObject(message);
   },
 
   getMessageById: async (id: number) => {
-    return await prisma.message.findUniqueOrThrow({
+    const message = await prisma.message.findUniqueOrThrow({
       where: { id },
       include: {
         deliveryEvents: true,
       },
     });
+
+    return decryptMessageObject(message);
   },
 
   getMessageByIdAndUserId: async (id: number, userId: number) => {
-    return await prisma.message.findFirst({
+    const message = await prisma.message.findFirst({
       where: { id, userId },
       include: {
         deliveryEvents: true,
       },
     });
+
+    return message ? decryptMessageObject(message) : null;
   },
 
   deleteMessageById: async (id: number) => {
@@ -148,13 +173,25 @@ const messageServices = {
       Prisma.MessageUncheckedUpdateInput
     >,
   ) => {
-    return await prisma.message.update({
+    const encryptedData = {
+      ...data,
+      ...(typeof data.content === "string"
+        ? { content: encryptMessage(data.content) }
+        : {}),
+      ...(typeof data.title === "string"
+        ? { title: encryptMessageNullable(data.title) }
+        : {}),
+    };
+
+    const message = await prisma.message.update({
       where: { id },
-      data,
+      data: encryptedData as any,
       include: {
         deliveryEvents: true,
       },
     });
+
+    return decryptMessageObject(message);
   },
 
   getMessageMetrics: async () => {
