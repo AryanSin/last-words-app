@@ -3,7 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev:server": "pnpm --filter server dev",
+    "dev:server": "pnpm --filter server dev:server",
+    "dev:worker": "pnpm --filter server dev:worker",
     "dev:mobile": "pnpm --filter mobile start",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "build": "pnpm --filter server build",

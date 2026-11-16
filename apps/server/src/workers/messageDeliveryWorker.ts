@@ -263,4 +263,26 @@ export const createMessageDeliveryWorker = (concurrency = 5) => {
   return worker;
 };
 
-export const messageDeliveryWorker = createMessageDeliveryWorker();
+let activeWorkerInstance: Worker<MessageDeliveryJobData> | null = null;
+
+export const startMessageDeliveryWorker = (concurrency = 5): Worker<MessageDeliveryJobData> => {
+  if (!activeWorkerInstance) {
+    logger.info(`[BullMQ Worker] Starting Message Delivery Worker with concurrency ${concurrency}...`);
+    activeWorkerInstance = createMessageDeliveryWorker(concurrency);
+  }
+  return activeWorkerInstance;
+};
+
+export const getMessageDeliveryWorker = (concurrency = 5): Worker<MessageDeliveryJobData> => {
+  return startMessageDeliveryWorker(concurrency);
+};
+
+// Backward-compatible reference
+export const messageDeliveryWorker = {
+  close: async () => {
+    if (activeWorkerInstance) {
+      await activeWorkerInstance.close();
+      activeWorkerInstance = null;
+    }
+  },
+};

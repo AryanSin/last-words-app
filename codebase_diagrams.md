@@ -19,36 +19,37 @@ flowchart TD
         WebClients["Web / API Clients<br/>• OpenAPI / Swagger UI (/docs)"]
     end
 
-    subgraph Gateway["API Gateway & Middleware Layer (apps/server)"]
-        ExpressApp["Express.js HTTP Server"]
+    subgraph APIService["API Server Service (src/server.ts)"]
+        ExpressApp["Express.js HTTP Server (Port 3000)"]
         PlatformDetector["Platform Detector Middleware<br/>(X-Client-Platform: Mobile vs. Web)"]
         GlobalLimiter["Global Sliding Rate Limiter<br/>(Redis-backed)"]
         AuthMiddleware["JWT Authentication Middleware<br/>(Access & Refresh Tokens)"]
         RouteRateLimiter["Per-Route Sliding Rate Limiters<br/>(Auth, Users, Messages, Metrics)"]
         ValidationMiddleware["Zod Validation Layer<br/>(@shared package schemas)"]
+
+        subgraph Routes["REST API Routers"]
+            AuthRouter["/auth<br/>• Register & Login (bcrypt)<br/>• Google OAuth (ID Token)<br/>• WhatsApp OTP (Redis TTL)<br/>• Platform-aware Token Refresh & Logout"]
+            UserRouter["/users<br/>• User Profile & Default Triggers<br/>• Biometric Heartbeat Check-In<br/>• Switch Status & Countdown<br/>• Password Verification (/verify-password)<br/>• Push Token Registration"]
+            MessageRouter["/messages<br/>• Encrypted Vault CRUD<br/>• Trigger Urgency Sorting<br/>• Message Status Tracking"]
+            JobRouter["/jobs<br/>• Manual Message Trigger<br/>• Manual Push Reminder Check"]
+            MetricRouter["/metrics<br/>• System Delivery Stats"]
+        end
+        
+        QueueProducer["BullMQ Queue Producer<br/>('message-delivery')"]
     end
 
-    subgraph Routes["REST API Routers"]
-        AuthRouter["/auth<br/>• Register & Login (bcrypt)<br/>• Google OAuth (ID Token)<br/>• WhatsApp OTP (Redis TTL)<br/>• Platform-aware Token Refresh & Logout"]
-        UserRouter["/users<br/>• User Profile & Default Triggers<br/>• Biometric Heartbeat Check-In<br/>• Switch Status & Countdown<br/>• Password Verification (/verify-password)<br/>• Push Token Registration"]
-        MessageRouter["/messages<br/>• Encrypted Vault CRUD<br/>• Trigger Urgency Sorting<br/>• Message Status Tracking"]
-        JobRouter["/jobs<br/>• Manual Message Trigger<br/>• Manual Push Reminder Check"]
-        MetricRouter["/metrics<br/>• System Delivery Stats"]
-    end
-
-    subgraph BackgroundServices["Background Engines & Queues"]
-        MessageCron["Message Trigger Cron<br/>(Runs every 15 min / configurable)"]
+    subgraph WorkerService["Dedicated Background Worker Service (src/worker.ts)"]
+        MessageCron["Message Trigger Cron<br/>(Scheduled Midnight / Configurable)"]
         ReminderCron["Push Reminder Cron<br/>(Scheduled Inactivity Warnings)"]
         TriggerService["MessageTriggerService<br/>(Threshold Inactivity Scanner)"]
         ReminderService["PushReminderService<br/>(7-day Warning & 5-day Heartbeat)"]
-        BullQueue["BullMQ Queue ('message-delivery')<br/>(Redis-backed, Exponential Backoff)"]
         Worker["BullMQ Delivery Worker<br/>(Concurrency: 5, Channel Dispatcher)"]
         CryptoEngine["AES-256-GCM Vault Engine<br/>(Master Key + IV + Auth Tag)"]
     end
 
-    subgraph DataStore["Data & Cache Layer"]
-        PostgresDB[("PostgreSQL 15 Database<br/>Prisma ORM Client")]
-        RedisDB[("Redis 7 In-Memory Store<br/>• Sliding-Window Rate Limits<br/>• BullMQ Job Queues<br/>• Refresh Tokens & OTP Caching")]
+    subgraph DataStore["Data & Asynchronous Broker Layer"]
+        PostgresDB[("PostgreSQL 15 Database<br/>(Prisma Client: Shared State)")]
+        RedisDB[("Redis 7 In-Memory Store<br/>• BullMQ Job Queue Streams<br/>• Sliding-Window Rate Limits<br/>• Refresh Tokens & OTP Caching")]
     end
 
     subgraph ExternalIntegrations["External Gateways"]
@@ -93,17 +94,19 @@ flowchart TD
     MessageRouter --> PostgresDB
     MessageRouter --> CryptoEngine
 
-    %% Background & Queues
+    JobRouter --> QueueProducer
+    QueueProducer -->|Enqueue Job| RedisDB
+
+    %% Dedicated Background Worker Service flows
     MessageCron --> TriggerService
     ReminderCron --> ReminderService
 
     TriggerService --> PostgresDB
-    TriggerService --> BullQueue
+    TriggerService -->|Enqueue Overdue Messages| RedisDB
     ReminderService --> PostgresDB
     ReminderService --> ExpoPushService
 
-    BullQueue --> RedisDB
-    RedisDB --> Worker
+    RedisDB -->|BRPOPLPUSH / Stream Consumer| Worker
     Worker --> CryptoEngine
     Worker --> PostgresDB
     Worker --> EmailService
@@ -388,11 +391,17 @@ flowchart LR
 
         subgraph ApiContainer["last_words_api_container"]
             ApiPort["Port 3000"]
-            ApiProcess["Express API Server<br/>+ BullMQ Workers<br/>+ Cron Schedulers"]
+            ApiProcess["Express API Server<br/>(pnpm dev:server / src/server.ts)"]
+        end
+
+        subgraph WorkerContainer["last_words_worker_container"]
+            WorkerProcess["Dedicated Background Worker<br/>(pnpm dev:worker / src/worker.ts)<br/>• BullMQ Delivery Worker<br/>• Message Trigger & Push Crons"]
         end
 
         ApiContainer -->|depends_on healthy| PostgresContainer
         ApiContainer -->|depends_on healthy| RedisContainer
+        WorkerContainer -->|depends_on healthy| PostgresContainer
+        WorkerContainer -->|depends_on healthy| RedisContainer
     end
 
     subgraph K8sCluster["Production: Kubernetes Cluster (k8s/)"]
@@ -400,13 +409,93 @@ flowchart LR
             PGK8s["PostgreSQL StatefulSet / Deployment<br/>postgres-service:5432 (10Gi PVC)"]
             RedisK8s["Redis Deployment<br/>redis-service:6379 (5Gi PVC)"]
             APIK8s["API Pods (Replicas: 2+)<br/>api-service:30080 / 3000"]
+            WorkerK8s["Worker Pods (Replicas: 1+)<br/>Background Processing Only"]
             ConfigMapSecrets["ConfigMaps & Secrets<br/>(01-secrets.yaml, 02-configmap.yaml)"]
         end
 
         ConfigMapSecrets -.-> APIK8s
+        ConfigMapSecrets -.-> WorkerK8s
         ConfigMapSecrets -.-> PGK8s
         ConfigMapSecrets -.-> RedisK8s
         APIK8s --> PGK8s
         APIK8s --> RedisK8s
+        WorkerK8s --> PGK8s
+        WorkerK8s --> RedisK8s
     end
 ```
+
+---
+
+## 7. Inter-Process Communication: API Server vs. Background Worker
+
+The **API Server (`src/server.ts`)** and **Background Worker (`src/worker.ts`)** are **completely decoupled OS processes**. Neither file imports or references the other. Instead, their coordination is achieved entirely via **Redis (asynchronous event broker / message queue)** and **PostgreSQL (shared persistent state)**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    box rgba(59, 130, 246, 0.1) API Server Process (src/server.ts)
+    participant Mobile as Mobile App / Client
+    participant API as Express API Server
+    participant QueueProducer as BullMQ Queue Producer
+    end
+
+    box rgba(239, 68, 68, 0.1) Asynchronous Broker & Data Layer
+    participant Redis as Redis 7 (BullMQ Queue)
+    participant DB as PostgreSQL 15 (Prisma)
+    end
+
+    box rgba(16, 185, 129, 0.1) Dedicated Worker Process (src/worker.ts)
+    participant Worker as BullMQ Worker
+    participant Cron as Inactivity Cron Scheduler
+    participant Gateway as External Gateways (SMTP / WhatsApp)
+    end
+
+    %% Scenario 1: Client action triggers background work
+    Note over Mobile, Gateway: Scenario A: Immediate Enqueue via API Endpoint (e.g. Manual /jobs/trigger-message)
+    Mobile->>API: POST /jobs/trigger-message
+    API->>QueueProducer: messageDeliveryQueue.add("send-message", { messageId: 42 })
+    QueueProducer->>Redis: LPUSH / XADD into bull:message-delivery (Job JSON Payload)
+    API-->>Mobile: 200 OK { message: "Job enqueued successfully" }
+    Note over API: API request finishes in milliseconds without waiting for email/WhatsApp!
+
+    %% Scenario 2: Worker picks up job from Redis
+    Redis->>Worker: BRPOPLPUSH / Stream notification: New job available
+    Worker->>Redis: Lock job & update state to "active"
+    Worker->>DB: Fetch Message (42) ciphertext & recipient
+    Worker->>Gateway: Send Email / WhatsApp payload
+    Gateway-->>Worker: HTTP 200 / SMTP Accepted
+    Worker->>DB: UPDATE Message SET status = 'SENT', sentAt = now()
+    Worker->>DB: INSERT INTO DeliveryEvent (messageId, success, channel)
+    Worker->>Redis: Mark job "completed" (or retry with exponential backoff on error)
+
+    %% Scenario 3: Scheduled Cron Inactivity Evaluation
+    Note over Mobile, Gateway: Scenario B: Scheduled Daily Inactivity Evaluation (Worker-Internal Cron)
+    loop Daily at Midnight (or Configured Cron)
+        Cron->>DB: Query users where (now() - lastLoginAt) >= thresholdDays
+        DB-->>Cron: Return 15 overdue messages
+        Cron->>Redis: BullMQ addBulk([job-1, job-2, ... job-15])
+        Redis->>Worker: Distribute jobs across worker concurrency threads
+    end
+
+    %% Scenario 4: User opens app to view status
+    Note over Mobile, DB: Scenario C: User Views Updated Status on Mobile
+    Mobile->>API: GET /messages
+    API->>DB: SELECT * FROM Message WHERE userId = 10
+    DB-->>API: Return messages (Status is now SENT!)
+    API-->>Mobile: 200 OK (User sees delivery confirmation without API ever handling SMTP)
+```
+
+### Architectural Principles of the Decoupled Worker:
+
+1. **Shared Message Broker (`messageDeliveryQueue`)**:
+   - Both processes import the queue configuration from [`apps/server/src/queues/messageDeliveryQueue.ts`](file:///home/aryansinghal/last-words-app/apps/server/src/queues/messageDeliveryQueue.ts).
+   - The API server uses this definition in **Producer mode** (`queue.add(...)`).
+   - The Worker process uses this definition in **Consumer mode** (`new Worker(MESSAGE_DELIVERY_QUEUE_NAME, processDeliveryJob)`).
+2. **Zero IPC / Network Coupling Between Services**:
+   - The API server has no knowledge of whether the worker is alive, restarting, or autoscaled to 10 instances.
+   - If the worker service is restarted or temporarily stopped, jobs safely accumulate in Redis and are processed as soon as the worker resumes.
+3. **Database as Single Source of Truth**:
+   - PostgreSQL maintains the durable state (`MessageStatus.PENDING` $\to$ `SENT` or `FAILED`).
+   - The API server reads state directly from PostgreSQL, meaning it always reflects up-to-date worker results without inter-service RPC calls.
+4. **Crash & Load Isolation**:
+   - If 10,000 users reach their inactivity threshold simultaneously, the worker service handles the load and network retries without taking a single CPU cycle or memory allocation away from user logins, check-ins, or vault operations on the API server.

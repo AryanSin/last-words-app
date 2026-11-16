@@ -39,6 +39,7 @@ services:
       dockerfile: docker/Dockerfile.server
     container_name: last_words_api_container
     restart: always
+    command: pnpm --filter server run dev:server
     ports:
       - "3000:3000"
     environment:
@@ -46,6 +47,29 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/last_words?schema=public
       REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    env_file:
+      - apps/server/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    container_name: last_words_worker_container
+    restart: always
+    command: pnpm --filter server run dev:worker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/last_words?schema=public
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     env_file:
       - apps/server/.env
     depends_on:

@@ -32,17 +32,19 @@ last-words-app/
 │   ├── server/                  # Node.js + Express REST API, BullMQ worker, cron scheduler
 │   │   ├── prisma/              # Prisma schema & database migrations (PostgreSQL)
 │   │   └── src/
+│   │       ├── server.ts        # HTTP API entrypoint (Express REST API, port 3000)
+│   │       ├── worker.ts        # Dedicated Background Worker entrypoint (BullMQ, Crons)
 │   │       ├── config/          # Environment variables, Redis, Prisma, Swagger
 │   │       ├── controllers/     # Route controllers (Auth, Users, Messages, Jobs, Metrics)
 │   │       ├── integrations/    # Email (Nodemailer), WhatsApp (Twilio/Meta), Google Auth
 │   │       ├── jobs/            # Scheduled cron jobs (Message triggers, Push reminders)
 │   │       ├── middleware/      # Rate limiters, JWT auth, Zod validation
-│   │       ├── queues/          # BullMQ queue definitions
+│   │       ├── queues/          # BullMQ queue definitions ('message-delivery')
 │   │       ├── scripts/         # End-to-end verification and biometric test scripts
 │   │       ├── services/        # Business logic, OTP, crypto engine (AES-256-GCM)
 │   │       ├── utils/           # Structured logging (Pino), tokens, pagination
 │   │       └── workers/         # BullMQ async delivery worker
-│   └── mobile/                  # React Native mobile app (Expo SDK 58, React Native 0.88, React 19)
+│   └── mobile/                  # React Native mobile app (Expo SDK 55, React Native 0.81, React 19)
 │       ├── app/                 # File-based routes ((auth), (tabs), messages/[id])
 │       ├── components/          # UI components (LifePulseButton, RadialCountdown, VaultMessageCard)
 │       ├── constants/           # Deep Midnight Obsidian & Radiant Cyan design system
@@ -53,7 +55,7 @@ last-words-app/
 │   └── shared/                  # @shared package: Zod schemas & TypeScript types
 ├── docker/                      # Dockerfiles (Dockerfile.server)
 ├── k8s/                         # Kubernetes manifests (StatefulSet, Deployments, Services)
-└── docker-compose.yml           # Multi-container orchestration (PostgreSQL 15, Redis 7, API)
+└── docker-compose.yml           # Multi-container orchestration (PostgreSQL 15, Redis 7, API, Worker)
 ```
 
 ---
@@ -147,15 +149,24 @@ cd ../..
 
 ### 5. Running the Application
 
-You can start the server and mobile apps using root pnpm scripts:
+You can start the server, background worker, and mobile apps using root pnpm scripts:
 
 ```bash
-# Start backend API server with auto-reload (port 3000)
+# 1. Start the HTTP API server with auto-reload (port 3000)
 pnpm dev:server
 
-# Start Expo mobile bundler (press 'a' for Android, 'i' for iOS simulator, or 'w' for Web)
+# 2. Start the Dedicated Background Worker & Cron Scheduler
+pnpm dev:worker
+
+# 3. Start the Expo mobile bundler (press 'a' for Android, 'i' for iOS simulator, or 'w' for Web)
 pnpm dev:mobile
 ```
+
+> **Running via Docker Compose**:
+> ```bash
+> # Starts PostgreSQL, Redis, the API server, and the dedicated worker container
+> docker compose up -d postgres redis api worker
+> ```
 
 ---
 
@@ -165,7 +176,8 @@ From the monorepo root:
 
 | Command | Action |
 | :--- | :--- |
-| `pnpm dev:server` | Start backend server in development mode (`ts-node-dev`) |
+| `pnpm dev:server` | Start backend REST API in development mode (`ts-node-dev src/server.ts`, port 3000) |
+| `pnpm dev:worker` | Start dedicated background worker & cron scheduler (`ts-node-dev src/worker.ts`) |
 | `pnpm dev:mobile` | Launch Expo React Native development server |
 | `pnpm typecheck` | Run TypeScript type checks across all workspaces (`server`, `mobile`, `shared`) |
 | `pnpm build` | Compile backend TypeScript to production JavaScript |
@@ -240,3 +252,4 @@ http://localhost:3000/docs
 3. **Session Hardening**: Mobile clients receive prolonged sliding refresh tokens that automatically refresh silently in the background, while web clients use stricter short-lived sessions. Revoked tokens are immediately wiped from Redis sets.
 4. **Resilient Message Dispatch**: Inactivity detection queues jobs into BullMQ with exponential backoff retries. If delivery channels fail up to 3 times, messages transition to `FAILED` status and log detailed error telemetry in `DeliveryEvent`.
 5. **Biometric Settings Protection**: Disabling biometric pulse check-in requires re-authentication via Face ID / Touch ID or account password verification (`POST /users/verify-password`), preventing unauthorized tampering on unlocked devices.
+6. **Decoupled 12-Factor Worker Architecture**: The HTTP API server (`src/server.ts`) and background processing engine (`src/worker.ts`) run as isolated OS processes communicating asynchronously through Redis distributed queues (`bull:message-delivery:*`) and PostgreSQL. This guarantees that heavy email dispatches, WhatsApp payloads, or reminder bursts never block the API event loop or introduce latency into mobile user sessions.
