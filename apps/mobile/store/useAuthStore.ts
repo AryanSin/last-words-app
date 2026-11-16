@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from "../services/apiClient";
+import { api, setOnSessionExpired } from "../services/apiClient";
 import {
   syncPushTokenWithBackend,
   unregisterPushTokenFromBackend,
@@ -14,11 +14,13 @@ export interface AuthState {
   // Actions
   initAuth: () => Promise<void>;
   performBackgroundCheckIn: () => Promise<void>;
+  trySilentTokenRefresh: () => Promise<boolean>;
+  handleSessionExpired: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   sendWhatsAppOtp: (phoneNumber: string) => Promise<{ expiresInSeconds: number }>;
   verifyWhatsAppOtp: (phoneNumber: string, otp: string, name?: string) => Promise<void>;
-  checkIn: () => Promise<string>;
+  checkIn: (biometricVerified?: boolean) => Promise<string>;
   updateUserTriggerDays: (days: number) => Promise<void>;
   refreshUserProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -32,10 +34,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setUser: (user) => set({ user, isAuthenticated: !!user }),
 
+  handleSessionExpired: () => {
+    set({ user: null, isAuthenticated: false, isLoading: false });
+  },
+
+  trySilentTokenRefresh: async () => {
+    try {
+      const refreshed = await api.auth.refreshTokensSilently();
+      return refreshed;
+    } catch {
+      return false;
+    }
+  },
+
   performBackgroundCheckIn: async () => {
     try {
       const token = await tokenStorage.getAccessToken();
       if (!token) return;
+
+      // Keep token alive on mobile via background refresh
+      await get().trySilentTokenRefresh();
 
       const res = await api.auth.checkIn();
       if (res?.lastLoginAt) {
@@ -115,8 +133,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     syncPushTokenWithBackend().catch(() => {});
   },
 
-  checkIn: async () => {
-    const res = await api.auth.checkIn();
+  checkIn: async (biometricVerified?: boolean) => {
+    const res = await api.auth.checkIn(
+      biometricVerified !== undefined
+        ? { biometricVerified, authMethod: biometricVerified ? "BIOMETRIC" : "MANUAL" }
+        : undefined,
+    );
     const currentUser = get().user;
     if (currentUser) {
       const updated = { ...currentUser, lastLoginAt: res.lastLoginAt };
@@ -154,3 +176,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, isAuthenticated: false });
   },
 }));
+
+// Automatic seamless logout trigger whenever an API call encounters an expired session
+setOnSessionExpired(() => {
+  useAuthStore.getState().handleSessionExpired();
+});

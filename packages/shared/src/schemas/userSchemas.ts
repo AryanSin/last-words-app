@@ -28,3 +28,20 @@ export const deletePushTokenSchema = z
     token: z.string().min(5, "Push token cannot be empty"),
   })
   .strict();
+
+export const userCheckInSchema = z
+  .object({
+    biometricVerified: z.boolean().optional(),
+    authMethod: z.enum(["BIOMETRIC", "MANUAL", "HEARTBEAT"]).optional(),
+  })
+  .optional();
+
+export type UserCheckInType = z.infer<typeof userCheckInSchema>;
+
+export const verifyPasswordSchema = z
+  .object({
+    password: z.string().min(1, "Password is required"),
+  })
+  .strict();
+
+export type VerifyPasswordType = z.infer<typeof verifyPasswordSchema>;

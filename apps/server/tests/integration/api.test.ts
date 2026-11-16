@@ -44,6 +44,18 @@ describe("API Integration Endpoints", () => {
     expect(res.body).toHaveProperty("status", "fail");
   });
 
+  it("POST /users/verify-password without authentication should return 401", async () => {
+    const res = await request(app).post("/users/verify-password").send({
+      password: "TestPassword123!",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /users/verify-password with invalid body should return 400 or 401", async () => {
+    const res = await request(app).post("/users/verify-password").send({});
+    expect([400, 401]).toContain(res.status);
+  });
+
   it("GET /docs should serve Swagger UI documentation", async () => {
     const res = await request(app).get("/docs/");
     expect([200, 301, 302]).toContain(res.status);

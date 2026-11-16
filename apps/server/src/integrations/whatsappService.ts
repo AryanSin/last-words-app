@@ -23,7 +23,7 @@ export interface IWhatsAppService {
   ): Promise<WhatsAppSendResult>;
 }
 
-class DevWhatsAppService implements IWhatsAppService {
+export class DevWhatsAppService implements IWhatsAppService {
   async sendOtp(phoneNumber: string, otp: string): Promise<WhatsAppSendResult> {
     console.log(`[dev-whatsapp] OTP -> ${phoneNumber}: ${otp}`);
     logger.info(`[DevWhatsApp] OTP sent to ${phoneNumber}: ${otp}`);
@@ -41,9 +41,23 @@ class DevWhatsAppService implements IWhatsAppService {
   }
 }
 
-class TwilioWhatsAppService implements IWhatsAppService {
+export class TwilioWhatsAppService implements IWhatsAppService {
+  private accountSid: string;
+  private authToken: string;
+  private whatsappNumber: string;
+
+  constructor(
+    accountSid: string = TWILIO_ACCOUNT_SID,
+    authToken: string = TWILIO_AUTH_TOKEN,
+    whatsappNumber: string = TWILIO_WHATSAPP_NUMBER,
+  ) {
+    this.accountSid = accountSid;
+    this.authToken = authToken;
+    this.whatsappNumber = whatsappNumber;
+  }
+
   private getAuthHeader(): string {
-    return `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`;
+    return `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`;
   }
 
   async sendOtp(phoneNumber: string, otp: string): Promise<WhatsAppSendResult> {
@@ -60,30 +74,46 @@ class TwilioWhatsAppService implements IWhatsAppService {
     return this.sendTwilioMessage(phoneNumber, text);
   }
 
+  async sendSms(
+    phoneNumber: string,
+    content: string,
+    fromNumber?: string,
+  ): Promise<WhatsAppSendResult> {
+    const from = fromNumber || this.whatsappNumber.replace("whatsapp:", "");
+    return this.sendTwilioRaw(phoneNumber.replace("whatsapp:", ""), content, from);
+  }
+
   private async sendTwilioMessage(
     to: string,
     body: string,
   ): Promise<WhatsAppSendResult> {
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_NUMBER) {
+    const formattedTo = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
+    const formattedFrom = this.whatsappNumber.startsWith("whatsapp:")
+      ? this.whatsappNumber
+      : `whatsapp:${this.whatsappNumber}`;
+    return this.sendTwilioRaw(formattedTo, body, formattedFrom);
+  }
+
+  private async sendTwilioRaw(
+    to: string,
+    body: string,
+    from: string,
+  ): Promise<WhatsAppSendResult> {
+    if (!this.accountSid || !this.authToken || !from) {
       return {
         success: false,
-        error: "Twilio WhatsApp credentials not configured in environment.",
+        error: "Twilio credentials or sender number not configured in environment or request.",
       };
     }
 
     try {
-      const formattedTo = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-      const formattedFrom = TWILIO_WHATSAPP_NUMBER.startsWith("whatsapp:")
-        ? TWILIO_WHATSAPP_NUMBER
-        : `whatsapp:${TWILIO_WHATSAPP_NUMBER}`;
-
       const formData = new URLSearchParams();
-      formData.append("To", formattedTo);
-      formData.append("From", formattedFrom);
+      formData.append("To", to);
+      formData.append("From", from);
       formData.append("Body", body);
 
       const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+        `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
         {
           method: "POST",
           headers: {
@@ -91,26 +121,38 @@ class TwilioWhatsAppService implements IWhatsAppService {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: formData.toString(),
+          signal: AbortSignal.timeout(6000),
         },
       );
 
       const json = (await response.json()) as any;
 
       if (!response.ok) {
-        const errorMsg = json.message || "Failed to send WhatsApp message via Twilio";
-        logger.error(`Twilio WhatsApp error: ${errorMsg}`);
+        const errorMsg = json.message || "Failed to send message via Twilio";
+        logger.error(`Twilio error: ${errorMsg}`);
         return { success: false, error: errorMsg };
       }
 
       return { success: true, messageId: json.sid };
     } catch (err: any) {
-      logger.error("Twilio WhatsApp Exception:", err);
+      logger.error("Twilio Exception:", err);
       return { success: false, error: err?.message || String(err) };
     }
   }
 }
 
-class MetaCloudWhatsAppService implements IWhatsAppService {
+export class MetaCloudWhatsAppService implements IWhatsAppService {
+  private token: string;
+  private phoneNumberId: string;
+
+  constructor(
+    token: string = META_WHATSAPP_TOKEN,
+    phoneNumberId: string = META_PHONE_NUMBER_ID,
+  ) {
+    this.token = token;
+    this.phoneNumberId = phoneNumberId;
+  }
+
   async sendOtp(phoneNumber: string, otp: string): Promise<WhatsAppSendResult> {
     const text = `Your Last Words verification code is: ${otp}. Valid for 5 minutes.`;
     return this.sendMetaMessage(phoneNumber, text);
@@ -126,10 +168,10 @@ class MetaCloudWhatsAppService implements IWhatsAppService {
   }
 
   private async sendMetaMessage(to: string, body: string): Promise<WhatsAppSendResult> {
-    if (!META_WHATSAPP_TOKEN || !META_PHONE_NUMBER_ID) {
+    if (!this.token || !this.phoneNumberId) {
       return {
         success: false,
-        error: "Meta WhatsApp credentials not configured in environment.",
+        error: "Meta WhatsApp credentials not configured in environment or request.",
       };
     }
 
@@ -143,14 +185,15 @@ class MetaCloudWhatsAppService implements IWhatsAppService {
       };
 
       const response = await fetch(
-        `https://graph.facebook.com/v20.0/${META_PHONE_NUMBER_ID}/messages`,
+        `https://graph.facebook.com/v20.0/${this.phoneNumberId}/messages`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${META_WHATSAPP_TOKEN}`,
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(6000),
         },
       );
 

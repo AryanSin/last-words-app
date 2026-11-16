@@ -3,14 +3,17 @@ import {
   registerPushTokenType,
   updateUserProfileType,
   userDefaultTriggerUpdateType,
+  verifyPasswordType,
 } from "@shared/types/apiTypes";
 import { userDto } from "@shared/types/userTypes";
+import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
 import { toMessageResponseDtoWithMessageStatus } from "../dto/messageDto";
 import { toUserResponseDtoMinimal } from "../dto/userDto";
 import pushNotificationService from "../services/pushNotificationService";
 import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
+import { userLogger } from "../utils/loggers";
 import { getPagination } from "../utils/pagination";
 import successResponse from "../utils/successResponse";
 
@@ -74,13 +77,59 @@ export const checkInCurrentUser = async (
   next: NextFunction,
 ) => {
   const id = Number(req.user?.id);
+  const { biometricVerified, authMethod } = (req.body || {}) as {
+    biometricVerified?: boolean;
+    authMethod?: string;
+  };
   const updatedUser = await userServices.touchLastLogin(id);
+
+  if (biometricVerified) {
+    userLogger(`User ${id} checked in with verified biometric authentication`);
+  }
 
   return successResponse(
     res,
     {
-      message: "Check-in successful! Inactivity timer reset.",
+      message: biometricVerified
+        ? "Biometric check-in verified! Inactivity timer reset."
+        : "Check-in successful! Inactivity timer reset.",
       lastLoginAt: updatedUser.lastLoginAt,
+      biometricVerified: Boolean(biometricVerified),
+      authMethod: authMethod || (biometricVerified ? "BIOMETRIC" : "MANUAL"),
+    },
+    200,
+  );
+};
+
+export const verifyCurrentUserPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userId = Number(req.user?.id);
+  const { password } = req.parsedData as verifyPasswordType;
+
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const user = await userServices.getUserById(userId);
+  if (!user || !user.password) {
+    throw new AppError("Account does not have a local password configured", 400);
+  }
+
+  const passwordMatched = await bcrypt.compare(password, user.password);
+  if (!passwordMatched) {
+    throw new AppError("Incorrect password", 401);
+  }
+
+  userLogger(`User ${userId} successfully authenticated password for security setting change`);
+
+  return successResponse(
+    res,
+    {
+      verified: true,
+      message: "Password verified successfully",
     },
     200,
   );

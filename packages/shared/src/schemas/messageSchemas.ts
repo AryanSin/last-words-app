@@ -56,3 +56,40 @@ export const updateMessageSchema = z
     deliveryChannel: deliveryChannelEnum.optional(),
     triggerAfterDays: z.number().int().positive().optional(),
   });
+
+export const testMessageServiceEnum = z.enum([
+  "smtp",
+  "email",
+  "twilio",
+  "meta",
+  "dev",
+  "expo",
+  "push",
+  "all",
+]);
+
+export const testMessageSchema = z.object({
+  service: testMessageServiceEnum.optional(),
+  channel: deliveryChannelEnum.optional(),
+  twilioMode: z.enum(["whatsapp", "sms"]).optional(),
+  sync: z.boolean().optional(),
+  recipientEmail: z.string().email("Invalid recipient email").optional().or(z.literal("")),
+  recipientPhone: z
+    .string()
+    .regex(phoneRegex, "Recipient phone must be in E.164 format (e.g. +14155552671)")
+    .optional()
+    .or(z.literal("")),
+  deviceToken: z.string().optional().or(z.literal("")),
+  title: z.string().max(200).optional(),
+  content: z.string().max(5000).optional(),
+  // Optional credential overrides for live diagnostics
+  twilioAccountSid: z.string().optional(),
+  twilioAuthToken: z.string().optional(),
+  twilioFromNumber: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.number().int().positive().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpSecure: z.boolean().optional(),
+});
+

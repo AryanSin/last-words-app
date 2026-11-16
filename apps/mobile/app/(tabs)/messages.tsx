@@ -14,8 +14,11 @@ import {
   View,
 } from "react-native";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { VaultMessageCard } from "../../components/VaultMessageCard";
 import { useTheme } from "../../hooks/use-theme-color";
 import { MessageItem, useDeleteMessage, useMessages } from "../../hooks/useMessages";
+
+type FilterType = "ALL" | "WHATSAPP" | "EMAIL";
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -26,8 +29,15 @@ export default function MessagesScreen() {
   const deleteMutation = useDeleteMessage();
 
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [filter, setFilter] = useState<FilterType>("ALL");
 
-  const messages = data?.messages || [];
+  const rawMessages = data?.messages || [];
+  const filteredMessages = rawMessages.filter((msg) => {
+    if (filter === "ALL") return true;
+    if (filter === "WHATSAPP") return msg.deliveryChannel === "WHATSAPP" || msg.deliveryChannel === "BOTH";
+    if (filter === "EMAIL") return msg.deliveryChannel === "EMAIL" || msg.deliveryChannel === "BOTH";
+    return true;
+  });
 
   const performDelete = async (id: number) => {
     try {
@@ -40,135 +50,56 @@ export default function MessagesScreen() {
     }
   };
 
-  const renderStatusBadge = (item: MessageItem) => {
-    switch (item.status) {
-      case "SENT":
-        return (
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: colors.successSurface,
-                borderColor: colors.success,
-              },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: colors.success }]}>
-              DELIVERED
-            </Text>
-          </View>
-        );
-      case "FAILED":
-        return (
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: colors.dangerSurface,
-                borderColor: colors.danger,
-              },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: colors.danger }]}>
-              FAILED
-            </Text>
-          </View>
-        );
-      case "PENDING":
-      default:
-        return (
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: colors.warningSurface,
-                borderColor: colors.warning,
-              },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: colors.warning }]}>
-              {item.daysRemaining !== undefined
-                ? `${item.daysRemaining}D LEFT`
-                : "PENDING"}
-            </Text>
-          </View>
-        );
-    }
-  };
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={styles.headerTitleRow}>
+        <View>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Last Words Messages</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            {rawMessages.length} {rawMessages.length === 1 ? "message" : "messages"} scheduled
+          </Text>
+        </View>
 
-  const renderItem = ({ item }: { item: MessageItem }) => {
-    const isEditable = item.status !== "SENT";
-
-    return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
-          onPress={() => router.push(`/messages/${item.id}`)}
+          style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/messages/create")}
           activeOpacity={0.8}
         >
-          <View style={styles.cardHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title || "Untitled Message"}</Text>
-              <Text style={[styles.cardRecipient, { color: colors.textMuted }]}>
-                To:{" "}
-                {item.recipientName ||
-                  item.recipientEmail ||
-                  item.recipientPhone ||
-                  "Specified Recipient"}
-              </Text>
-            </View>
-            {renderStatusBadge(item)}
-          </View>
-
-          <Text style={[styles.cardPreview, { color: colors.textMuted }]} numberOfLines={3}>
-            {item.content}
-          </Text>
+          <Ionicons name="add" size={18} color="#FFFFFF" />
+          <Text style={styles.composeBtnText}>Compose</Text>
         </TouchableOpacity>
-
-        <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-          <View style={styles.footerInfo}>
-            <Ionicons
-              name={
-                item.deliveryChannel === "WHATSAPP"
-                  ? "logo-whatsapp"
-                  : item.deliveryChannel === "BOTH"
-                    ? "paper-plane"
-                    : "mail"
-              }
-              size={14}
-              color={colors.textMuted}
-            />
-            <Text style={[styles.footerText, { color: colors.textMuted }]}>Channel: {item.deliveryChannel}</Text>
-            {item.triggerAfterDays ? (
-              <Text style={[styles.footerText, { color: colors.textMuted }]}>• Custom: {item.triggerAfterDays}d</Text>
-            ) : (
-              <Text style={[styles.footerText, { color: colors.textMuted }]}>• Account Default</Text>
-            )}
-          </View>
-
-          <View style={styles.actionButtons}>
-            {isEditable && (
-              <TouchableOpacity
-                onPress={() => router.push(`/messages/${item.id}/edit`)}
-                style={[styles.actionButton, { backgroundColor: colors.primarySurface }]}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="create-outline" size={18} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              onPress={() => setDeleteTargetId(item.id)}
-              style={[styles.actionButton, { backgroundColor: colors.dangerSurface }]}
-              disabled={deleteMutation.isPending}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
-            </TouchableOpacity>
-          </View>
-        </View>
       </View>
-    );
-  };
+
+      {/* Filter Tabs */}
+      <View style={styles.filterRow}>
+        {(["ALL", "WHATSAPP", "EMAIL"] as FilterType[]).map((tab) => {
+          const isSelected = filter === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isSelected ? colors.primary : colors.surfaceRaised,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setFilter(tab)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: isSelected ? "#FFFFFF" : colors.textMuted },
+                ]}
+              >
+                {tab === "ALL" ? "All" : tab === "WHATSAPP" ? "WhatsApp" : "Email"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -178,30 +109,56 @@ export default function MessagesScreen() {
         </View>
       ) : (
         <FlatList
-          data={messages}
+          data={filteredMessages}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
+          ListHeaderComponent={renderHeader}
+          renderItem={({ item }) => (
+            <VaultMessageCard
+              item={item}
+              onPress={() => router.push(`/messages/${item.id}`)}
+              onEdit={() => router.push(`/messages/${item.id}/edit`)}
+              onDelete={() => setDeleteTargetId(item.id)}
+              isDeleting={deleteMutation.isPending && deleteTargetId === item.id}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
-              onRefresh={refetch}
+              onRefresh={() => {
+                refetch();
+              }}
               tintColor={colors.primary}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="mail-open-outline" size={48} color={colors.textSubtle} />
-              <Text style={[styles.emptyTitle, { color: colors.textMuted }]}>Your Vault is Empty</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textSubtle }]}>
-                Create your first message to be dispatched upon inactivity.
+              <View
+                style={[
+                  styles.emptyIconBox,
+                  { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+                ]}
+              >
+                <Ionicons name="mail-open-outline" size={40} color={colors.textSubtle} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Messages Found</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                {filter === "ALL"
+                  ? "Create your first message to be dispatched upon confirmed inactivity."
+                  : `No messages configured for channel ${filter}.`}
               </Text>
+              <TouchableOpacity
+                style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+                onPress={() => router.push("/messages/create")}
+              >
+                <Text style={styles.emptyBtnText}>Create Last Words Message</Text>
+              </TouchableOpacity>
             </View>
           }
         />
       )}
 
-      {/* Floating Create Button */}
+      {/* Floating Action Button */}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
         onPress={() => router.push("/messages/create")}
@@ -213,8 +170,8 @@ export default function MessagesScreen() {
       {/* Cross-Platform Custom Delete Confirmation Modal */}
       <ConfirmModal
         visible={deleteTargetId !== null}
-        title="Delete Vault Message"
-        message="Are you sure you want to permanently delete this message? It will be removed from your vault and cannot be recovered."
+        title="Delete Last Words Message"
+        message="Are you sure you want to permanently delete this message? It will be removed from your scheduled switch and cannot be recovered."
         confirmText="Delete Message"
         cancelText="Cancel"
         isDestructive={true}
@@ -242,87 +199,93 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 90,
   },
-  card: {
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
+  headerContainer: {
+    marginBottom: 16,
   },
-  cardHeader: {
+  headerTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10,
+    alignItems: "center",
+    marginBottom: 12,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.3,
   },
-  cardRecipient: {
-    fontSize: 13,
+  headerSubtitle: {
+    fontSize: 12,
     marginTop: 2,
+    fontWeight: "500",
   },
-  statusBadge: {
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  composeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 12,
   },
-  statusText: {
-    fontSize: 10,
+  composeBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
     fontWeight: "700",
-    letterSpacing: 0.5,
   },
-  cardPreview: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  cardFooter: {
+  filterRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    paddingTop: 10,
-  },
-  footerInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  footerText: {
-    fontSize: 12,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 8,
   },
-  actionButton: {
-    padding: 6,
-    borderRadius: 6,
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 60,
   },
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    marginBottom: 16,
+  },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    marginTop: 12,
+    fontWeight: "800",
   },
   emptySubtitle: {
     fontSize: 13,
     textAlign: "center",
     marginTop: 6,
     paddingHorizontal: 30,
+    lineHeight: 18,
+  },
+  emptyBtn: {
+    marginTop: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  emptyBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
   },
   fab: {
     position: "absolute",
-    bottom: 20,
+    bottom: 24,
     right: 20,
     width: 56,
     height: 56,

@@ -48,7 +48,7 @@ export default function TabLayout() {
           tabBarLabel: "Dashboard",
           headerTitle: "Last Words",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse-outline" size={size || 22} color={color} />
+            <Ionicons name="pulse-outline" size={size || 22} color={color as string} />
           ),
         }}
       />
@@ -57,9 +57,9 @@ export default function TabLayout() {
         options={{
           title: "Messages",
           tabBarLabel: "Messages",
-          headerTitle: "Vault Messages",
+          headerTitle: "Last Words Messages",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="mail-outline" size={size || 22} color={color} />
+            <Ionicons name="mail-outline" size={size || 22} color={color as string} />
           ),
         }}
       />
@@ -68,9 +68,9 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarLabel: "Settings",
-          headerTitle: "Preferences & Profile",
+          headerTitle: "Last Words Settings",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size || 22} color={color} />
+            <Ionicons name="settings-outline" size={size || 22} color={color as string} />
           ),
         }}
       />

@@ -34,6 +34,18 @@ interface ApiResponse<T = any> {
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string | null) => void)[] = [];
+let sessionExpiredHandler: (() => void) | null = null;
+
+export const setOnSessionExpired = (handler: () => void) => {
+  sessionExpiredHandler = handler;
+};
+
+const triggerSessionExpired = async () => {
+  await tokenStorage.clearSession();
+  if (sessionExpiredHandler) {
+    sessionExpiredHandler();
+  }
+};
 
 const onTokenRefreshed = (token: string | null) => {
   refreshSubscribers.forEach((callback) => callback(token));
@@ -54,6 +66,7 @@ export const apiRequest = async <T = any>(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-Client-Platform": Platform.OS,
     ...(options.headers as Record<string, string>),
   };
 
@@ -81,8 +94,8 @@ export const apiRequest = async <T = any>(
   ) {
     const refreshToken = await tokenStorage.getRefreshToken();
     if (!refreshToken) {
-      await tokenStorage.clearSession();
-      throw new Error("Session expired. Please log in again.");
+      await triggerSessionExpired();
+      throw new Error("Session expired. Automatically signing out...");
     }
 
     if (!isRefreshing) {
@@ -90,7 +103,10 @@ export const apiRequest = async <T = any>(
       try {
         const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Platform": Platform.OS,
+          },
           body: JSON.stringify({ refreshToken }),
         });
 
@@ -106,13 +122,13 @@ export const apiRequest = async <T = any>(
         } else {
           isRefreshing = false;
           onTokenRefreshed(null);
-          await tokenStorage.clearSession();
-          throw new Error("Session expired. Please log in again.");
+          await triggerSessionExpired();
+          throw new Error("Session expired. Automatically signing out...");
         }
       } catch (err) {
         isRefreshing = false;
         onTokenRefreshed(null);
-        await tokenStorage.clearSession();
+        await triggerSessionExpired();
         throw err;
       }
     }
@@ -125,6 +141,7 @@ export const apiRequest = async <T = any>(
     if (retryToken) {
       return apiRequest<T>(endpoint, options, true);
     } else {
+      await triggerSessionExpired();
       throw new Error("Authentication failed after token refresh");
     }
   }
@@ -188,13 +205,44 @@ export const api = {
       );
     },
 
-    async checkIn() {
-      return apiRequest<{ message: string; lastLoginAt: string }>(
-        "/auth/check-in",
-        {
+    async checkIn(options?: { biometricVerified?: boolean; authMethod?: string }) {
+      return apiRequest<{
+        message: string;
+        lastLoginAt: string;
+        biometricVerified?: boolean;
+        authMethod?: string;
+      }>("/auth/check-in", {
+        method: "POST",
+        body: options ? JSON.stringify(options) : undefined,
+      });
+    },
+
+    async refreshTokensSilently(): Promise<boolean> {
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (!refreshToken) return false;
+
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: "POST",
-        },
-      );
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Platform": Platform.OS,
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        const refreshJson: ApiResponse<{ accessToken: string; refreshToken: string }> =
+          await refreshResponse.json();
+
+        if (refreshResponse.ok && refreshJson.data) {
+          await tokenStorage.setAccessToken(refreshJson.data.accessToken);
+          await tokenStorage.setRefreshToken(refreshJson.data.refreshToken);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
     },
 
     async logout() {
@@ -281,6 +329,16 @@ export const api = {
         method: "DELETE",
         body: JSON.stringify({ token }),
       });
+    },
+
+    async verifyPassword(password: string) {
+      return apiRequest<{ verified: boolean; message: string }>(
+        "/users/verify-password",
+        {
+          method: "POST",
+          body: JSON.stringify({ password }),
+        },
+      );
     },
   },
 };

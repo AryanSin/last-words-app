@@ -178,6 +178,102 @@ components:
           type: integer
           example: 30
 
+    TestMessageRequest:
+      type: object
+      description: Payload to test message dispatch across SMTP, Twilio, Meta WhatsApp, Dev mock, or Expo push services.
+      properties:
+        service:
+          type: string
+          enum: [smtp, email, twilio, meta, dev, expo, push, all]
+          description: Specific service provider to test
+          example: smtp
+        channel:
+          type: string
+          enum: [EMAIL, WHATSAPP, BOTH]
+          description: Core delivery channel to test
+          example: EMAIL
+        twilioMode:
+          type: string
+          enum: [whatsapp, sms]
+          default: whatsapp
+          example: whatsapp
+        recipientEmail:
+          type: string
+          format: email
+          example: tester@example.com
+        recipientPhone:
+          type: string
+          description: E.164 phone number
+          example: "+14155552671"
+        deviceToken:
+          type: string
+          description: Push token for push notification test
+          example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+        title:
+          type: string
+          example: "Test Service Verification"
+        content:
+          type: string
+          example: "Checking if message dispatch works properly."
+        twilioAccountSid:
+          type: string
+          description: Optional Twilio SID override for testing
+        twilioAuthToken:
+          type: string
+          description: Optional Twilio Auth Token override
+        twilioFromNumber:
+          type: string
+          description: Optional Twilio WhatsApp or SMS sender number
+        smtpHost:
+          type: string
+          description: Optional custom SMTP host
+        smtpPort:
+          type: integer
+          example: 587
+        smtpUser:
+          type: string
+        smtpPass:
+          type: string
+        smtpSecure:
+          type: boolean
+
+    TestMessageResponse:
+      type: object
+      properties:
+        overallSuccess:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "All tested messaging services succeeded"
+        servicesTested:
+          type: array
+          items:
+            type: string
+          example: ["smtp", "twilio"]
+        results:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              success:
+                type: boolean
+              provider:
+                type: string
+              recipient:
+                type: string
+              messageId:
+                type: string
+              previewUrl:
+                type: string
+              error:
+                type: string
+              durationMs:
+                type: number
+        timestamp:
+          type: string
+          format: date-time
+
     UpdateProfileRequest:
       type: object
       properties:
@@ -831,6 +927,89 @@ paths:
         '200':
           description: Message deleted
 
+  /messages/test:
+    post:
+      summary: Test message dispatch services (SMTP, Twilio, Meta, Dev, Expo)
+      description: Sends test message(s) through configured or specified messaging providers and returns detailed diagnostic results.
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestMessageRequest'
+      responses:
+        '200':
+          description: Delivery service diagnostic report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/TestMessageResponse'
+                  requestedAt:
+                    type: string
+                    format: date-time
+
+  /messages/test/queue:
+    get:
+      summary: View recent background queued test email jobs
+      tags: [Messages]
+      responses:
+        '200':
+          description: List of queued test email jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        status:
+                          type: string
+                          enum: [queued, processing, completed, failed]
+                        recipient:
+                          type: string
+                        enqueuedAt:
+                          type: string
+                        completedAt:
+                          type: string
+                        messageId:
+                          type: string
+                        error:
+                          type: string
+
+  /messages/test/queue/{jobId}:
+    get:
+      summary: Get delivery status of an asynchronous queued test email
+      tags: [Messages]
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status of the specified queued email job
+        '404':
+          description: Job ID not found
+
   # ----------------------------------------------------
   # METRICS ROUTES (/metrics) - Rate Limit: 30 req/min
   # ----------------------------------------------------
@@ -871,3 +1050,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PushReminderSummaryResponse'
+
+  /jobs/test-message:
+    post:
+      summary: Diagnostic test dispatch endpoint for operations & monitoring
+      description: Tests configured messaging services (SMTP, Twilio WhatsApp/SMS, Meta, Dev mock, Expo) without requiring user login.
+      tags: [Jobs]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestMessageRequest'
+      responses:
+        '200':
+          description: Delivery service diagnostic report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/TestMessageResponse'
+                  requestedAt:
+                    type: string
+                    format: date-time
+
+  /messages/test/queue:
+    get:
+      summary: View recent background queued test email jobs
+      tags: [Messages]
+      responses:
+        '200':
+          description: List of queued test email jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        status:
+                          type: string
+                          enum: [queued, processing, completed, failed]
+                        recipient:
+                          type: string
+                        enqueuedAt:
+                          type: string
+                        completedAt:
+                          type: string
+                        messageId:
+                          type: string
+                        error:
+                          type: string
+
+  /messages/test/queue/{jobId}:
+    get:
+      summary: Get delivery status of an asynchronous queued test email
+      tags: [Messages]
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status of the specified queued email job
+        '404':
+          description: Job ID not found
+

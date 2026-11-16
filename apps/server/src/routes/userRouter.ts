@@ -3,6 +3,7 @@ import {
   registerPushTokenSchema,
   updateUserProfileSchema,
   userDefaultTriggerUpdateSchema,
+  verifyPasswordSchema,
 } from "@shared/schemas/userSchemas";
 import express from "express";
 import {
@@ -18,6 +19,7 @@ import {
   removePushToken,
   updateCurrentUser,
   updateUserDefaultTrigger,
+  verifyCurrentUserPassword,
 } from "../controllers/userController";
 import userRateLimiter from "../middleware/rateLimiter/userRateLimiter";
 import validate from "../middleware/validate";
@@ -37,6 +39,11 @@ userRouter.get("/switch-status", catchAsync(getCurrentUserSwitchStatus));
 userRouter.get("/me/switch-status", catchAsync(getCurrentUserSwitchStatus));
 
 userRouter.post("/check-in", catchAsync(checkInCurrentUser));
+userRouter.post(
+  "/verify-password",
+  validate(verifyPasswordSchema),
+  catchAsync(verifyCurrentUserPassword),
+);
 
 userRouter.post(
   "/push-token",

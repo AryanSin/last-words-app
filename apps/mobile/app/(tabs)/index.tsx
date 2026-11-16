@@ -13,13 +13,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LifePulseButton } from "../../components/LifePulseButton";
+import { RadialCountdown } from "../../components/RadialCountdown";
 import { useTheme } from "../../hooks/use-theme-color";
 import { useMessages, useSwitchStatus } from "../../hooks/useMessages";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   // Zustand Auth State
   const user = useAuthStore((s) => s.user);
@@ -56,15 +58,18 @@ export default function DashboardScreen() {
     ]);
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = async (biometricVerified: boolean) => {
     setCheckingIn(true);
     setHeartbeatToast("");
     try {
-      const msg = await checkIn();
+      const msg = await checkIn(biometricVerified);
       await refetchSwitchStatus();
       setHeartbeatToast(msg || "Inactivity timer refreshed successfully!");
       if (Platform.OS !== "web") {
-        Alert.alert("Heartbeat Confirmed", msg || "Inactivity timer has been successfully refreshed.");
+        Alert.alert(
+          biometricVerified ? "Biometric Pulse Verified" : "Heartbeat Confirmed",
+          msg || "Inactivity timer has been successfully refreshed.",
+        );
       }
     } catch (err: any) {
       const msg = err.message || "Failed to confirm heartbeat.";
@@ -124,72 +129,111 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Welcome Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.textMuted }]}>Welcome back,</Text>
-            <Text style={[styles.userName, { color: colors.text }]}>{user.name || "User"}</Text>
+        {/* Brand App Bar */}
+        <View style={styles.brandHeader}>
+          <View style={styles.brandLeft}>
+            <View
+              style={[
+                styles.brandLogoBox,
+                { backgroundColor: colors.primarySurface, borderColor: colors.primaryBorder },
+              ]}
+            >
+              <Text style={[styles.brandLogoText, { color: colors.primary }]}>LW</Text>
+            </View>
+            <View>
+              <View style={styles.brandTitleRow}>
+                <Text style={[styles.brandTitle, { color: colors.text }]}>Last Words</Text>
+                <View
+                  style={[
+                    styles.activeDot,
+                    { backgroundColor: isUrgent ? colors.warning : colors.pulseEmerald },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
+                {user.name ? `Welcome back, ${user.name}` : "Dead-Man's Switch Active"}
+              </Text>
+            </View>
           </View>
+
           <View
             style={[
               styles.badge,
               {
-                backgroundColor: isUrgent ? colors.warningSurface : colors.successSurface,
-                borderColor: isUrgent ? colors.warning : colors.success,
+                backgroundColor: isUrgent ? colors.warningSurface : colors.pulseEmeraldSurface,
+                borderColor: isUrgent ? colors.warning : colors.pulseEmerald,
               },
             ]}
           >
             <Text
               style={[
                 styles.badgeText,
-                { color: isUrgent ? colors.warning : colors.success },
+                { color: isUrgent ? colors.warning : colors.pulseEmerald },
               ]}
             >
-              {isUrgent ? "URGENT LIMIT" : "ACTIVE SWITCH"}
+              {isUrgent ? "CRITICAL LIMIT" : "SWITCH SAFE"}
             </Text>
           </View>
         </View>
 
         {heartbeatToast ? (
-          <View style={[styles.toastCard, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={[styles.toastText, { color: colors.success }]}>{heartbeatToast}</Text>
+          <View
+            style={[
+              styles.toastCard,
+              {
+                backgroundColor: colors.pulseEmeraldSurface,
+                borderColor: colors.pulseEmerald,
+              },
+            ]}
+          >
+            <Ionicons name="checkmark-circle" size={20} color={colors.pulseEmerald} />
+            <Text style={[styles.toastText, { color: colors.pulseEmerald }]}>
+              {heartbeatToast}
+            </Text>
           </View>
         ) : null}
 
-        {/* Inactivity Status Card */}
-        <View style={[styles.statusCard, { backgroundColor: colors.surface, borderColor: isUrgent ? colors.warning : colors.border }]}>
+        {/* Primary Inactivity Status Card */}
+        <View
+          style={[
+            styles.statusCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: isUrgent ? colors.warning : colors.border,
+            },
+          ]}
+        >
           <View style={styles.statusHeader}>
-            <Ionicons
-              name={isUrgent ? "alert-circle" : "shield-checkmark"}
-              size={24}
-              color={isUrgent ? colors.warning : colors.success}
-            />
-            <Text
-              style={[
-                styles.statusTitle,
-                { color: isUrgent ? colors.warning : colors.success },
-              ]}
-            >
-              {isUrgent ? "Switch Alert: Approaching Threshold" : "Switch Status: Safe"}
-            </Text>
+            <View style={styles.statusTitleGroup}>
+              <Ionicons
+                name={isUrgent ? "alert-circle" : "shield-checkmark"}
+                size={20}
+                color={isUrgent ? colors.warning : colors.pulseEmerald}
+              />
+              <Text
+                style={[
+                  styles.statusTitle,
+                  { color: isUrgent ? colors.warning : colors.pulseEmerald },
+                ]}
+              >
+                {isUrgent ? "Warning: Approaching Threshold" : "Switch Status: Armed & Safe"}
+              </Text>
+            </View>
+
+            <View style={styles.cryptoBadge}>
+              <Ionicons name="lock-closed" size={11} color={colors.primary} />
+              <Text style={[styles.cryptoBadgeText, { color: colors.primary }]}>
+                {switchStatus?.encryptionAlgorithm || "AES-256 GCM"}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.countdownBox}>
-            <Text
-              style={[
-                styles.countdownDays,
-                { color: isUrgent ? colors.warning : colors.text },
-              ]}
-            >
-              {daysRemaining}
-            </Text>
-            <Text style={[styles.countdownLabel, { color: colors.textMuted }]}>
-              {soonestMessage
-                ? "DAYS LEFT UNTIL SOONEST MESSAGE DISPATCH"
-                : "DAYS REMAINING UNTIL DEFAULT TRIGGER"}
-            </Text>
-          </View>
+          {/* Radial Countdown Progress Meter */}
+          <RadialCountdown
+            daysRemaining={daysRemaining}
+            totalThreshold={triggerDays}
+            isUrgent={isUrgent}
+          />
 
           {soonestMessage && (
             <TouchableOpacity
@@ -216,59 +260,56 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           )}
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Effective Threshold:</Text>
+            <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Inactivity Interval:</Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>
               {triggerDays} Days {soonestMessage ? "(Message Override)" : "(Account Default)"}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Last Confirmed Check-In:</Text>
+            <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Last Verified Heartbeat:</Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>
               {lastLogin.toLocaleDateString()} {lastLogin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </Text>
           </View>
         </View>
 
-        {/* Primary Check-In Action Button */}
-        <TouchableOpacity
-          style={[
-            styles.checkInButton,
-            { backgroundColor: colors.surface, borderColor: colors.primary, shadowColor: colors.primary },
-            checkingIn && styles.buttonDisabled,
-          ]}
-          onPress={handleCheckIn}
-          disabled={checkingIn}
-          activeOpacity={0.8}
-        >
-          {checkingIn ? (
-            <ActivityIndicator color={colors.primary} size="large" />
-          ) : (
-            <>
-              <Ionicons name="heart" size={32} color={colors.danger} />
-              <Text style={[styles.checkInButtonText, { color: colors.text }]}>I AM ALIVE</Text>
-              <Text style={[styles.checkInSubtext, { color: colors.textMuted }]}>
-                Tap to refresh timer and prevent message trigger
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {/* Primary Biometric Life-Pulse Action Button */}
+        <LifePulseButton onCheckIn={handleCheckIn} isLoading={checkingIn} />
 
-        {/* Stats Grid - Live synced via TanStack Query */}
+        {/* Quick Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
+          <TouchableOpacity
+            style={[
+              styles.statCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={() => router.push("/(tabs)/messages")}
+            activeOpacity={0.7}
+          >
+            <View style={styles.statIconBox}>
+              <Ionicons name="mail-outline" size={20} color={colors.primary} />
+            </View>
             <Text style={[styles.statNumber, { color: colors.text }]}>{totalMessages}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Total Vault Messages</Text>
-          </View>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Last Words Messages</Text>
+          </TouchableOpacity>
 
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="time-outline" size={24} color={colors.warning} />
+          <TouchableOpacity
+            style={[
+              styles.statCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={() => router.push("/(tabs)/messages")}
+            activeOpacity={0.7}
+          >
+            <View style={styles.statIconBox}>
+              <Ionicons name="timer-outline" size={20} color={colors.warning} />
+            </View>
             <Text style={[styles.statNumber, { color: colors.text }]}>{pendingMessages}</Text>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>Pending Delivery</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -286,29 +327,62 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
-  header: {
+  brandHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  greeting: {
-    fontSize: 14,
+  brandLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  userName: {
-    fontSize: 22,
-    fontWeight: "700",
+  brandLogoBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandLogoText: {
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  brandTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  brandTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  activeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  brandSubtitle: {
+    fontSize: 12,
+    marginTop: 1,
+    fontWeight: "500",
   },
   badge: {
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 20,
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   toastCard: {
     flexDirection: "row",
@@ -316,7 +390,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 16,
   },
   toastText: {
@@ -324,44 +398,51 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   statusCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    borderWidth: 1,
+    borderWidth: 1.2,
     marginBottom: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   statusHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  statusTitleGroup: {
+    flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 16,
   },
   statusTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
   },
-  countdownBox: {
+  cryptoBadge: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  countdownDays: {
-    fontSize: 48,
+  cryptoBadgeText: {
+    fontSize: 10,
     fontWeight: "800",
-  },
-  countdownLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    marginTop: 4,
-    textAlign: "center",
+    letterSpacing: 0.5,
   },
   soonestBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
-    marginTop: 12,
+    marginTop: 14,
   },
   soonestTitle: {
     fontSize: 13,
@@ -387,31 +468,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  checkInButton: {
-    borderWidth: 2,
-    borderRadius: 20,
-    paddingVertical: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  checkInButtonText: {
-    fontSize: 22,
-    fontWeight: "800",
-    marginTop: 8,
-    letterSpacing: 1.5,
-  },
-  checkInSubtext: {
-    fontSize: 12,
-    marginTop: 4,
-  },
   statsGrid: {
     flexDirection: "row",
     gap: 12,
@@ -419,14 +475,17 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.2,
     alignItems: "center",
+  },
+  statIconBox: {
+    marginBottom: 4,
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: "700",
-    marginTop: 6,
+    fontWeight: "800",
+    marginTop: 2,
   },
   statLabel: {
     fontSize: 12,

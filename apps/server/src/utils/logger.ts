@@ -1,27 +1,28 @@
 import crypto from "crypto";
 import pino from "pino";
 import pinoHttp from "pino-http";
+import pinoPretty from "pino-pretty";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-export const rawPinoLogger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
-  transport: isDev
-    ? {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:yyyy-mm-dd HH:MM:ss",
-          ignore: "pid,hostname",
-        },
-      }
-    : undefined,
-  base: {
-    service: "last-words-api",
-    env: process.env.NODE_ENV || "development",
+export const rawPinoLogger = pino(
+  {
+    level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
+    base: {
+      service: "last-words-api",
+      env: process.env.NODE_ENV || "development",
+    },
+    timestamp: pino.stdTimeFunctions.isoTime,
   },
-  timestamp: pino.stdTimeFunctions.isoTime,
-});
+  isDev
+    ? pinoPretty({
+        colorize: true,
+        translateTime: "SYS:yyyy-mm-dd HH:MM:ss",
+        ignore: "pid,hostname",
+        sync: true,
+      })
+    : undefined,
+);
 
 export const httpLogger = pinoHttp({
   logger: rawPinoLogger,

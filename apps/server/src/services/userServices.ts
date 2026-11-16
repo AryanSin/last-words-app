@@ -141,6 +141,8 @@ const userServices = {
         pendingMessages: 0,
         isUrgent: daysRemaining <= 7,
         soonestMessage: null,
+        isEncrypted: true,
+        encryptionAlgorithm: "AES-256-GCM",
       };
     }
 
@@ -183,6 +185,8 @@ const userServices = {
         triggerAfterDays: soonestResult.triggerThreshold,
         daysRemaining: soonestResult.daysRemaining,
       },
+      isEncrypted: true,
+      encryptionAlgorithm: "AES-256-GCM",
     };
   },
 

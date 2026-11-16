@@ -1,5 +1,12 @@
+import { testMessageSchema } from "@shared/schemas/messageSchemas";
 import express, { NextFunction, Request, Response } from "express";
+import {
+  getQueuedMailJobStatusController,
+  getRecentQueuedMailJobsController,
+  testMessageDeliveryController,
+} from "../controllers/messageController";
 import jobRateLimiter from "../middleware/rateLimiter/jobRateLimiter";
+import validate from "../middleware/validate";
 import { runMessageTriggerService } from "../services/messageTriggerService";
 import { runPushReminderService } from "../services/pushReminderService";
 import { catchAsync } from "../utils/catchAsync";
@@ -29,5 +36,21 @@ jobRouter.route("/trigger-reminders").post(
     });
   }),
 );
+
+jobRouter
+  .route("/test-message")
+  .post(validate(testMessageSchema), catchAsync(testMessageDeliveryController));
+
+jobRouter
+  .route("/test-send")
+  .post(validate(testMessageSchema), catchAsync(testMessageDeliveryController));
+
+jobRouter
+  .route("/test-queue")
+  .get(catchAsync(getRecentQueuedMailJobsController));
+
+jobRouter
+  .route("/test-queue/:jobId")
+  .get(catchAsync(getQueuedMailJobStatusController));
 
 export default jobRouter;

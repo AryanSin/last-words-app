@@ -1,6 +1,7 @@
 import { MessageStatus } from "@prisma/client";
 import {
   messageCreationBodyType,
+  testMessageBodyType,
   updateMessageBodyType,
 } from "@shared/types/apiTypes";
 import { NextFunction, Request, Response } from "express";
@@ -9,6 +10,11 @@ import {
   toMessageResponseDtoWithMessageStatus,
 } from "../dto/messageDto";
 import messageServices from "../services/messageServices";
+import {
+  getQueuedMailJobStatus,
+  getRecentQueuedMailJobs,
+  runMessageDeliveryTest,
+} from "../services/messageTestService";
 import AppError from "../utils/AppError";
 import { getPagination } from "../utils/pagination";
 import successResponse from "../utils/successResponse";
@@ -182,3 +188,42 @@ export const updateMessage = async (
     200,
   );
 };
+
+export const testMessageDeliveryController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const data = (req.parsedData || req.body) as testMessageBodyType;
+  const currentUser = req.user || null;
+
+  const report = await runMessageDeliveryTest(data, currentUser);
+
+  return successResponse(res, report, 200);
+};
+
+export const getQueuedMailJobStatusController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const jobId = String(req.params.jobId);
+  const job = getQueuedMailJobStatus(jobId);
+
+  if (!job) {
+    throw new AppError("Queued email job not found", 404);
+  }
+
+  return successResponse(res, job, 200);
+};
+
+export const getRecentQueuedMailJobsController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const jobs = getRecentQueuedMailJobs();
+  return successResponse(res, jobs, 200);
+};
+
+

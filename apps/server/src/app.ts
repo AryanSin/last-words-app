@@ -1,13 +1,24 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
+import { testMessageSchema } from "@shared/schemas/messageSchemas";
+import {
+  getQueuedMailJobStatusController,
+  getRecentQueuedMailJobsController,
+  testMessageDeliveryController,
+} from "./controllers/messageController";
 import swaggerRouter from "./docs/swagger";
-import { authenticateToken } from "./middleware/authMiddleware";
+import {
+  authenticateToken,
+  optionalAuthenticateToken,
+} from "./middleware/authMiddleware";
 import {
   globalErrorHandler,
   prismaErrorHandler,
 } from "./middleware/errorMiddleware";
 import globalRateLimiter from "./middleware/rateLimiter/globalRateLimiter";
+import messageRateLimiter from "./middleware/rateLimiter/messageRateLimiter";
 import { addRequestTime } from "./middleware/requestBodyModificationMiddleWare";
+import validate from "./middleware/validate";
 import authRouter from "./routes/authRouter";
 import jobRouter from "./routes/jobRouter";
 import messageRouter from "./routes/messageRouter";
@@ -20,6 +31,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(httpLogger);
 app.use(addRequestTime);
 app.use(globalRateLimiter);
@@ -40,6 +52,29 @@ app.get("/health", (req: Request, res: Response) => {
 
 app.use("/jobs", jobRouter);
 app.use("/auth", authRouter);
+
+app.post(
+  [
+    "/messages/test",
+    "/messages/test/",
+    "/messages/test-send",
+    "/messages/test-send/",
+  ],
+  messageRateLimiter,
+  catchAsync(optionalAuthenticateToken),
+  validate(testMessageSchema),
+  catchAsync(testMessageDeliveryController),
+);
+
+app.get(
+  ["/messages/test/queue", "/messages/test/queue/"],
+  catchAsync(getRecentQueuedMailJobsController),
+);
+
+app.get(
+  "/messages/test/queue/:jobId",
+  catchAsync(getQueuedMailJobStatusController),
+);
 
 app.use(catchAsync(authenticateToken));
 

@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../../hooks/use-theme-color";
+import { biometricService } from "../../services/biometricService";
+import { tokenStorage } from "../../services/tokenStorage";
 import { useAuthStore } from "../../store/useAuthStore";
 
 type AuthMode = "login" | "register" | "whatsapp";
@@ -37,6 +40,27 @@ export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+
+  const [canBiometricUnlock, setCanBiometricUnlock] = useState(false);
+  const [biometricType, setBiometricType] = useState("Biometrics");
+
+  useEffect(() => {
+    (async () => {
+      const status = await biometricService.getStatus();
+      const hasToken = !!(await tokenStorage.getAccessToken());
+      if (status.hasHardware && status.isEnrolled && hasToken) {
+        setCanBiometricUnlock(true);
+        setBiometricType(status.biometricType);
+      }
+    })();
+  }, []);
+
+  const handleBiometricUnlock = async () => {
+    const verified = await biometricService.authenticate("Unlock Last Words");
+    if (verified) {
+      router.replace("/(tabs)");
+    }
+  };
 
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
@@ -111,7 +135,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <Text style={[styles.logoTitle, { color: colors.text }]}>LAST WORDS</Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              Automated Inactivity Messaging & Switch Vault
+              Automated Inactivity Messaging & Switch
             </Text>
           </View>
 
@@ -220,7 +244,7 @@ export default function LoginScreen() {
                     <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <Text style={styles.primaryButtonText}>
-                      {mode === "login" ? "Sign In" : "Create Vault Account"}
+                      {mode === "login" ? "Sign In to Last Words" : "Create Last Words Account"}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -331,6 +355,31 @@ export default function LoginScreen() {
               </>
             )}
           </View>
+
+          {canBiometricUnlock && mode === "login" && (
+            <TouchableOpacity
+              style={[
+                styles.biometricButton,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceRaised,
+                },
+              ]}
+              onPress={handleBiometricUnlock}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={
+                  biometricType === "Face ID" ? "scan-outline" : "finger-print-outline"
+                }
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={[styles.biometricButtonText, { color: colors.text }]}>
+                Unlock with {biometricType}
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -416,5 +465,19 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 13,
+  },
+  biometricButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 18,
+  },
+  biometricButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

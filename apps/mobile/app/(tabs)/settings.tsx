@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,20 +8,24 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { SecurityAuthModal } from "../../components/SecurityAuthModal";
 import { useTheme } from "../../hooks/use-theme-color";
+import { api } from "../../services/apiClient";
+import { biometricService, BiometricStatus } from "../../services/biometricService";
 import { useAuthStore } from "../../store/useAuthStore";
 
 const PRESET_DAYS = [30, 60, 90, 180, 365];
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -34,6 +38,109 @@ export default function SettingsScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDisableAuthModal, setShowDisableAuthModal] = useState(false);
+
+  // Biometric preferences state
+  const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
+  const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+
+  useEffect(() => {
+    biometricService.getStatus().then((status) => {
+      setBiometricStatus(status);
+      if (status.hasHardware && status.isEnrolled) {
+        biometricService.isEnabled().then(setBiometricsEnabled);
+      }
+    });
+  }, []);
+
+  const handleToggleBiometrics = async (val: boolean) => {
+    if (val) {
+      if (biometricStatus?.hasHardware && biometricStatus?.isEnrolled) {
+        // Require verification before turning on
+        const verified = await biometricService.authenticate(
+          `Confirm your ${biometricStatus.biometricType} identity to enable biometric pulse verification`,
+        );
+        if (!verified) return;
+      }
+      setBiometricsEnabled(true);
+      await biometricService.setEnabled(true);
+      setStatusMessage(`${biometricStatus?.biometricType || "Biometric"} pulse check-in enabled.`);
+    } else {
+      // Disabling Face ID / biometric pulse check-in MUST require authentication
+      if (biometricStatus?.hasHardware && biometricStatus?.isEnrolled) {
+        const verified = await biometricService.authenticate(
+          `Confirm your ${biometricStatus.biometricType} to disable pulse check-in`,
+          { allowFallbackOnUnsupported: false, fallbackLabel: "Enter Password" },
+        );
+        if (verified) {
+          setBiometricsEnabled(false);
+          await biometricService.setEnabled(false);
+          setStatusMessage(`${biometricStatus.biometricType} pulse check-in disabled.`);
+          if (Platform.OS !== "web") {
+            Alert.alert(
+              "Biometrics Disabled",
+              `${biometricStatus.biometricType} pulse check-in has been disabled.`,
+            );
+          }
+          return;
+        }
+      }
+
+      // Biometric prompt was cancelled, failed, or device has no enrolled biometrics/web:
+      // Show Password Authentication Modal
+      setShowDisableAuthModal(true);
+    }
+  };
+
+  const handleVerifyPasswordToDisable = async (password: string): Promise<boolean> => {
+    try {
+      const res = await api.user.verifyPassword(password);
+      if (res?.verified) {
+        setShowDisableAuthModal(false);
+        setBiometricsEnabled(false);
+        await biometricService.setEnabled(false);
+        setStatusMessage(
+          `${biometricStatus?.biometricType || "Biometric"} pulse check-in disabled.`,
+        );
+        if (Platform.OS !== "web") {
+          Alert.alert(
+            "Biometrics Disabled",
+            `${biometricStatus?.biometricType || "Biometric"} pulse check-in has been disabled.`,
+          );
+        }
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      throw new Error(err.message || "Incorrect password. Please try again.");
+    }
+  };
+
+  const handleRetryBiometricsInModal = async () => {
+    if (!biometricStatus?.hasHardware || !biometricStatus?.isEnrolled) return;
+    const verified = await biometricService.authenticate(
+      `Confirm your ${biometricStatus.biometricType} to disable pulse check-in`,
+      { allowFallbackOnUnsupported: false },
+    );
+    if (verified) {
+      setShowDisableAuthModal(false);
+      setBiometricsEnabled(false);
+      await biometricService.setEnabled(false);
+      setStatusMessage(`${biometricStatus.biometricType} pulse check-in disabled.`);
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Biometrics Disabled",
+          `${biometricStatus.biometricType} pulse check-in has been disabled.`,
+        );
+      }
+    }
+  };
+
+  const handleCancelDisableModal = () => {
+    setShowDisableAuthModal(false);
+    // Keep switch ON since authentication was not completed
+    setBiometricsEnabled(true);
+  };
 
   const handleSaveTrigger = async () => {
     setStatusMessage("");
@@ -97,13 +204,28 @@ export default function SettingsScreen() {
         {/* User Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.userHeader}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>
+            <View
+              style={[
+                styles.avatar,
+                { backgroundColor: colors.primarySurface, borderColor: colors.primaryBorder },
+              ]}
+            >
+              <Text style={[styles.avatarText, { color: colors.primary }]}>
                 {(user?.name || user?.email || "U")[0].toUpperCase()}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.userName, { color: colors.text }]}>{user?.name || "User"}</Text>
+              <View style={styles.userNameRow}>
+                <Text style={[styles.userName, { color: colors.text }]}>{user?.name || "User"}</Text>
+                <View
+                  style={[
+                    styles.memberBadge,
+                    { backgroundColor: colors.pulseEmeraldSurface, borderColor: colors.pulseEmerald },
+                  ]}
+                >
+                  <Text style={[styles.memberBadgeText, { color: colors.pulseEmerald }]}>ACTIVE</Text>
+                </View>
+              </View>
               <Text style={[styles.userEmail, { color: colors.textMuted }]}>
                 {user?.email || user?.phoneNumber || "No contact info"}
               </Text>
@@ -111,11 +233,51 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Biometric Security Setting Card */}
+        {biometricStatus && biometricStatus.hasHardware && (
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.biometricRow}>
+              <View style={styles.biometricLeft}>
+                <View
+                  style={[
+                    styles.biometricIconBox,
+                    { backgroundColor: colors.pulseEmeraldSurface },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      biometricStatus.biometricType === "Face ID"
+                        ? "scan-outline"
+                        : "finger-print-outline"
+                    }
+                    size={22}
+                    color={colors.pulseEmerald}
+                  />
+                </View>
+                <View style={styles.biometricTextWrap}>
+                  <Text style={[styles.cardSectionTitle, { color: colors.text }]}>
+                    {biometricStatus.biometricType} Pulse Check-In
+                  </Text>
+                  <Text style={[styles.cardDescription, { color: colors.textMuted, marginBottom: 0 }]}>
+                    Require biometric confirmation when tapping "Confirm Life Pulse"
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={biometricsEnabled}
+                onValueChange={handleToggleBiometrics}
+                trackColor={{ false: colors.border, true: colors.pulseEmerald }}
+                thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined}
+              />
+            </View>
+          </View>
+        )}
+
         {/* Inactivity Threshold Configuration */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardSectionTitle, { color: colors.text }]}>Default Inactivity Threshold</Text>
           <Text style={[styles.cardDescription, { color: colors.textMuted }]}>
-            How many days of inactivity should pass before your vault messages are dispatched to recipients?
+            How many days of inactivity should pass before your Last Words messages are dispatched to recipients?
           </Text>
 
           {/* Quick Presets */}
@@ -184,6 +346,22 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Cryptographic Protection Badge */}
+        <View
+          style={[
+            styles.cryptoCard,
+            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cryptoTitle, { color: colors.text }]}>AES-256 GCM Protection</Text>
+            <Text style={[styles.cryptoSubtitle, { color: colors.textMuted }]}>
+              All stored messages are encrypted at rest with random IVs and verification tags.
+            </Text>
+          </View>
+        </View>
+
         {/* Logout Button */}
         <TouchableOpacity
           style={[
@@ -213,7 +391,7 @@ export default function SettingsScreen() {
       <ConfirmModal
         visible={showLogoutModal}
         title="Sign Out"
-        message="Are you sure you want to sign out of your account on this device?"
+        message="Are you sure you want to sign out of your Last Words account on this device?"
         confirmText="Sign Out"
         cancelText="Cancel"
         isDestructive={true}
@@ -221,6 +399,18 @@ export default function SettingsScreen() {
         iconName="log-out-outline"
         onConfirm={performLogout}
         onCancel={() => setShowLogoutModal(false)}
+      />
+
+      {/* Security Authentication Modal for Disabling Biometrics */}
+      <SecurityAuthModal
+        visible={showDisableAuthModal}
+        title={`Disable ${biometricStatus?.biometricType || "Biometric"} Check-In`}
+        description={`Authentication is required to disable ${biometricStatus?.biometricType || "biometric"} pulse check-in. Confirm with your account password or biometric verification.`}
+        biometricType={biometricStatus?.biometricType || "Face ID"}
+        hasBiometrics={Boolean(biometricStatus?.hasHardware && biometricStatus?.isEnrolled)}
+        onRetryBiometrics={handleRetryBiometricsInModal}
+        onVerifyPassword={handleVerifyPasswordToDisable}
+        onCancel={handleCancelDisableModal}
       />
     </SafeAreaView>
   );
@@ -232,11 +422,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   statusBanner: {
     borderWidth: 1,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 16,
   },
   statusBannerText: {
@@ -244,10 +435,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 18,
     marginBottom: 16,
-    borderWidth: 1,
+    borderWidth: 1.2,
   },
   userHeader: {
     flexDirection: "row",
@@ -257,30 +448,68 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 16,
+    borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    color: "#FFFFFF",
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "800",
+  },
+  userNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   userName: {
     fontSize: 18,
     fontWeight: "700",
   },
+  memberBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  memberBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
   userEmail: {
     fontSize: 13,
     marginTop: 2,
   },
+  biometricRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  biometricLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    marginRight: 12,
+  },
+  biometricIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  biometricTextWrap: {
+    flex: 1,
+  },
   cardSectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   cardDescription: {
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
   },
@@ -292,13 +521,13 @@ const styles = StyleSheet.create({
   presetChip: {
     flex: 1,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     borderWidth: 1,
   },
   presetText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   inputRow: {
     flexDirection: "row",
@@ -307,14 +536,14 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
   },
   saveButton: {
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -326,15 +555,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
+  cryptoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  cryptoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  cryptoSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  },
   logoutButton: {
     flexDirection: "row",
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 10,
+    marginTop: 6,
   },
   logoutButtonText: {
     fontSize: 15,

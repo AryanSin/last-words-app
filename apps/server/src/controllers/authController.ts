@@ -16,12 +16,30 @@ import authServices from "../services/authServices";
 import otpService from "../services/otpService";
 import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
+import { authLogger } from "../utils/loggers";
 import {
   generateTokens,
   revokeRefreshToken,
   rotateRefreshToken,
 } from "../utils/authUtility";
 import successResponse from "../utils/successResponse";
+
+export const getClientPlatform = (req: Request): string => {
+  const headerPlatform = req.headers["x-client-platform"] as string | undefined;
+  if (headerPlatform) return headerPlatform;
+  const bodyPlatform = (req.body as any)?.platform as string | undefined;
+  if (bodyPlatform) return bodyPlatform;
+  const userAgent = (req.headers["user-agent"] || "").toLowerCase();
+  if (
+    userAgent.includes("okhttp") ||
+    userAgent.includes("darwin") ||
+    userAgent.includes("cfnetwork") ||
+    userAgent.includes("expo")
+  ) {
+    return "mobile";
+  }
+  return "web";
+};
 
 export const createUser = async (
   req: Request,
@@ -46,7 +64,8 @@ export const createUser = async (
     lastLoginAt: new Date(),
   });
 
-  const tokens = await generateTokens(user);
+  const platform = getClientPlatform(req);
+  const tokens = await generateTokens(user, platform);
 
   return successResponse(
     res,
@@ -78,7 +97,8 @@ export const handleLogin = async (
   }
 
   const updatedUser = await userServices.touchLastLogin(user.id);
-  const tokens = await generateTokens(updatedUser);
+  const platform = getClientPlatform(req);
+  const tokens = await generateTokens(updatedUser, platform);
 
   return successResponse(
     res,
@@ -99,7 +119,8 @@ export const handleGoogleAuth = async (
 
   const googleUserInfo = await googleAuthService.verifyIdToken(idToken);
   const user = await authServices.findOrCreateGoogleUser(googleUserInfo);
-  const tokens = await generateTokens(user);
+  const platform = getClientPlatform(req);
+  const tokens = await generateTokens(user, platform);
 
   return successResponse(
     res,
@@ -149,7 +170,8 @@ export const verifyWhatsAppOtp = async (
   await otpService.verifyOtp(phoneNumber, otp);
 
   const user = await authServices.findOrCreateWhatsAppUser(phoneNumber, name);
-  const tokens = await generateTokens(user);
+  const platform = getClientPlatform(req);
+  const tokens = await generateTokens(user, platform);
 
   return successResponse(
     res,
@@ -167,7 +189,8 @@ export const handleRefreshToken = async (
   next: NextFunction,
 ) => {
   const { refreshToken } = req.parsedData as refreshTokenType;
-  const result = await rotateRefreshToken(refreshToken);
+  const platform = getClientPlatform(req);
+  const result = await rotateRefreshToken(refreshToken, platform);
 
   return successResponse(
     res,
@@ -205,13 +228,26 @@ export const handleCheckIn = async (
     throw new AppError("Unauthorized", 401);
   }
 
+  const { biometricVerified, authMethod } = (req.body || {}) as {
+    biometricVerified?: boolean;
+    authMethod?: string;
+  };
+
   const updatedUser = await userServices.touchLastLogin(userId);
+
+  if (biometricVerified) {
+    authLogger(`User ${userId} confirmed heartbeat via biometric authentication`);
+  }
 
   return successResponse(
     res,
     {
-      message: "Check-in successful! Inactivity timer has been refreshed.",
+      message: biometricVerified
+        ? "Biometric check-in verified! Inactivity timer refreshed."
+        : "Check-in successful! Inactivity timer has been refreshed.",
       lastLoginAt: updatedUser.lastLoginAt,
+      biometricVerified: Boolean(biometricVerified),
+      authMethod: authMethod || (biometricVerified ? "BIOMETRIC" : "MANUAL"),
     },
     200,
   );

@@ -2,10 +2,13 @@
   "name": "last-words-app",
   "private": true,
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
+    "dev:server": "pnpm --filter server dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "build": "pnpm --filter server build",
     "test": "pnpm --filter server test",
-    "dev:server": "pnpm --filter server dev"
+    "lint": "pnpm -r run lint"
   },
   "repository": {
     "type": "git",
@@ -14,14 +17,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Last Words - Automated Inactivity Messaging & Switch",
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
     "prettier-plugin-organize-imports": "^4.3.0",
     "tsconfig-paths": "^4.2.0"
-  },
-  "dependencies": {
-    "jsonwebtoken": "^9.0.3",
-    "zod": "^3.23.8"
   }
 }

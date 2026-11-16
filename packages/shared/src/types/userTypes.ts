@@ -39,4 +39,6 @@ export interface SwitchStatusDto {
   pendingMessages: number;
   isUrgent: boolean;
   soonestMessage: SoonestMessageDto | null;
+  isEncrypted?: boolean;
+  encryptionAlgorithm?: string;
 }

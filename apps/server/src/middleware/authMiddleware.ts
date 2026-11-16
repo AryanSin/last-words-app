@@ -71,3 +71,32 @@ export const authenticateToken = async (
     return next(err);
   }
 };
+
+export const optionalAuthenticateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const user = await userServices.getUserById(Number(decoded.id));
+
+    if (user) {
+      req.user = user;
+      req.userId = user.id;
+    }
+
+    next();
+  } catch {
+    // In optional mode, proceed even if token is missing or expired
+    next();
+  }
+};
+

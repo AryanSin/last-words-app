@@ -85,8 +85,8 @@ export default function CreateMessageScreen() {
         router.replace("/(tabs)/messages");
       } else {
         Alert.alert(
-          "Message Vaulted",
-          "Your message has been securely locked in the vault.",
+          "Message Scheduled",
+          "Your message has been securely encrypted with AES-256 GCM and armed.",
           [
             {
               text: "OK",
@@ -295,7 +295,7 @@ export default function CreateMessageScreen() {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Lock Message in Vault</Text>
+              <Text style={styles.submitButtonText}>Save Last Words Message</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

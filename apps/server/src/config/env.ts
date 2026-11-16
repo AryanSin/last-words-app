@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 const JWT_SECRET = process.env.JWT_SECRET || "jwt_secret_change_for_last_words_1234321";
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";

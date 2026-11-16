@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
@@ -32,15 +32,35 @@ export default function RootLayout() {
 
   const initAuth = useAuthStore((s) => s.initAuth);
   const performBackgroundCheckIn = useAuthStore((s) => s.performBackgroundCheckIn);
+  const trySilentTokenRefresh = useAuthStore((s) => s.trySilentTokenRefresh);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  const segments = useSegments();
+  const router = useRouter();
+
+  // Global Auth Guard: automatically navigates to login on session expiration, or to tabs on login
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === "(auth)";
+
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace("/(auth)/login");
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, isLoading, segments, router]);
 
   useEffect(() => {
     // Initialize authentication from storage
     initAuth();
 
-    // Refresh last login when user returns to active app
+    // Refresh last login and slide mobile refresh token when user returns to active app
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === "active") {
         performBackgroundCheckIn();
+        trySilentTokenRefresh().catch(() => {});
       }
     };
 
@@ -49,7 +69,7 @@ export default function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, [initAuth, performBackgroundCheckIn]);
+  }, [initAuth, performBackgroundCheckIn, trySilentTokenRefresh]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -65,7 +65,7 @@ export default function MessageDetailScreen() {
             style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.backButtonText, { color: colors.text }]}>Return to Vault</Text>
+            <Text style={[styles.backButtonText, { color: colors.text }]}>Return to Messages</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -80,8 +80,14 @@ export default function MessageDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header with Title & Status */}
         <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.cryptoBadgeRow}>
+            <Ionicons name="lock-closed" size={13} color={colors.primary} />
+            <Text style={[styles.cryptoBadgeText, { color: colors.primary }]}>
+              AES-256 GCM ENCRYPTED
+            </Text>
+          </View>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.text }]}>{message.title || "Untitled Vault Message"}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{message.title || "Untitled Last Words Message"}</Text>
             {message.status === "SENT" ? (
               <View style={[styles.statusBadge, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.success} />
@@ -316,8 +322,8 @@ export default function MessageDetailScreen() {
       {/* Cross-Platform Custom Delete Confirmation Modal */}
       <ConfirmModal
         visible={showDeleteModal}
-        title="Delete Vault Message"
-        message="Are you sure you want to permanently delete this message from your vault? This action cannot be reversed."
+        title="Delete Last Words Message"
+        message="Are you sure you want to permanently delete this message? This action cannot be reversed."
         confirmText="Delete Message"
         cancelText="Cancel"
         isDestructive={true}
@@ -349,6 +355,17 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     marginBottom: 16,
+  },
+  cryptoBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 8,
+  },
+  cryptoBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
   },
   titleRow: {
     flexDirection: "row",
