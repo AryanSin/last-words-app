@@ -19,7 +19,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "@shared": "workspace:*",
+    "@lastwords/shared": "workspace:*",
     "bcrypt": "^6.0.0",
     "bullmq": "^6.2.0",
     "cors": "^2.8.6",

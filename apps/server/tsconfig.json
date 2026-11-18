@@ -6,7 +6,9 @@
     "outDir": "./dist",
     "paths": {
       "@shared/*": ["../../packages/shared/src/*"],
-      "@shared": ["../../packages/shared/src/index.ts"]
+      "@shared": ["../../packages/shared/src/index.ts"],
+      "@lastwords/shared/*": ["../../packages/shared/src/*"],
+      "@lastwords/shared": ["../../packages/shared/src/index.ts"]
     }
   },
 

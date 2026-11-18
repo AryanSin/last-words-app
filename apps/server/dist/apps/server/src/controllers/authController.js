@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleCheckIn = exports.handleLogout = exports.handleRefreshToken = exports.verifyWhatsAppOtp = exports.sendWhatsAppOtp = exports.handleGoogleAuth = exports.handleLogin = exports.createUser = exports.getClientPlatform = void 0;
 const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const redis_1 = __importDefault(require("../config/redis"));
 const userDto_1 = require("../dto/userDto");
 const googleAuthService_1 = __importDefault(require("../integrations/googleAuthService"));
 const whatsappService_1 = require("../integrations/whatsappService");
@@ -125,8 +127,23 @@ const handleRefreshToken = async (req, res, next) => {
 exports.handleRefreshToken = handleRefreshToken;
 const handleLogout = async (req, res, next) => {
     const { refreshToken } = req.parsedData;
-    await (0, authUtility_1.revokeRefreshToken)(refreshToken);
-    return (0, successResponse_1.default)(res, { message: "Logged out successfully. Refresh token revoked." }, 200);
+    if (refreshToken) {
+        await (0, authUtility_1.revokeRefreshToken)(refreshToken);
+    }
+    // Blacklist the active access token in Redis if provided
+    const authHeader = req.headers["authorization"];
+    const accessToken = authHeader && authHeader.split(" ")[1];
+    if (accessToken) {
+        try {
+            const decoded = jsonwebtoken_1.default.decode(accessToken);
+            const ttl = decoded?.exp
+                ? Math.max(1, decoded.exp - Math.floor(Date.now() / 1000))
+                : 86400 * 30;
+            await redis_1.default.set(`revoked_token:${accessToken}`, "1", "EX", ttl);
+        }
+        catch { }
+    }
+    return (0, successResponse_1.default)(res, { message: "Logged out successfully. Tokens revoked." }, 200);
 };
 exports.handleLogout = handleLogout;
 const handleCheckIn = async (req, res, next) => {

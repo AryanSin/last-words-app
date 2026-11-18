@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.messageDeliveryWorker = exports.createMessageDeliveryWorker = exports.processDeliveryJob = void 0;
+exports.messageDeliveryWorker = exports.getMessageDeliveryWorker = exports.startMessageDeliveryWorker = exports.createMessageDeliveryWorker = exports.processDeliveryJob = void 0;
 const client_1 = require("@prisma/client");
 const bullmq_1 = require("bullmq");
 const constants_1 = require("../config/constants");
@@ -215,4 +215,25 @@ const createMessageDeliveryWorker = (concurrency = 5) => {
     return worker;
 };
 exports.createMessageDeliveryWorker = createMessageDeliveryWorker;
-exports.messageDeliveryWorker = (0, exports.createMessageDeliveryWorker)();
+let activeWorkerInstance = null;
+const startMessageDeliveryWorker = (concurrency = 5) => {
+    if (!activeWorkerInstance) {
+        loggers_1.logger.info(`[BullMQ Worker] Starting Message Delivery Worker with concurrency ${concurrency}...`);
+        activeWorkerInstance = (0, exports.createMessageDeliveryWorker)(concurrency);
+    }
+    return activeWorkerInstance;
+};
+exports.startMessageDeliveryWorker = startMessageDeliveryWorker;
+const getMessageDeliveryWorker = (concurrency = 5) => {
+    return (0, exports.startMessageDeliveryWorker)(concurrency);
+};
+exports.getMessageDeliveryWorker = getMessageDeliveryWorker;
+// Backward-compatible reference
+exports.messageDeliveryWorker = {
+    close: async () => {
+        if (activeWorkerInstance) {
+            await activeWorkerInstance.close();
+            activeWorkerInstance = null;
+        }
+    },
+};

@@ -9,6 +9,8 @@ import {
 } from "@shared/types/apiTypes";
 import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import redis from "../config/redis";
 import { toUserResponseDtoMinimal } from "../dto/userDto";
 import googleAuthService from "../integrations/googleAuthService";
 import { whatsappService } from "../integrations/whatsappService";
@@ -209,11 +211,26 @@ export const handleLogout = async (
   next: NextFunction,
 ) => {
   const { refreshToken } = req.parsedData as refreshTokenType;
-  await revokeRefreshToken(refreshToken);
+  if (refreshToken) {
+    await revokeRefreshToken(refreshToken);
+  }
+
+  // Blacklist the active access token in Redis if provided
+  const authHeader = req.headers["authorization"];
+  const accessToken = authHeader && authHeader.split(" ")[1];
+  if (accessToken) {
+    try {
+      const decoded = jwt.decode(accessToken) as any;
+      const ttl = decoded?.exp
+        ? Math.max(1, decoded.exp - Math.floor(Date.now() / 1000))
+        : 86400 * 30;
+      await redis.set(`revoked_token:${accessToken}`, "1", "EX", ttl);
+    } catch {}
+  }
 
   return successResponse(
     res,
-    { message: "Logged out successfully. Refresh token revoked." },
+    { message: "Logged out successfully. Tokens revoked." },
     200,
   );
 };

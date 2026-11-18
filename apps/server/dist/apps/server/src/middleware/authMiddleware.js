@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.optionalAuthenticateToken = exports.authenticateToken = exports.validateRegisterInput = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const env_1 = require("../config/env");
+const redis_1 = __importDefault(require("../config/redis"));
 const userServices_1 = __importDefault(require("../services/userServices"));
 const AppError_1 = __importDefault(require("../utils/AppError"));
 const validateRegisterInput = async (req, res, next) => {
@@ -25,6 +26,11 @@ const authenticateToken = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, env_1.JWT_SECRET);
+        // Check if token was explicitly revoked on logout
+        const isRevoked = await redis_1.default.get(`revoked_token:${token}`).catch(() => null);
+        if (isRevoked) {
+            throw new AppError_1.default("Access token has been revoked. Please sign in again.", 401);
+        }
         const user = await userServices_1.default.getUserById(Number(decoded.id));
         if (!user) {
             throw new AppError_1.default("User account not found", 404);
@@ -55,6 +61,11 @@ const optionalAuthenticateToken = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, env_1.JWT_SECRET);
+        // Check if token was explicitly revoked on logout
+        const isRevoked = await redis_1.default.get(`revoked_token:${token}`).catch(() => null);
+        if (isRevoked) {
+            throw new AppError_1.default("Access token has been revoked. Please sign in again.", 401);
+        }
         const user = await userServices_1.default.getUserById(Number(decoded.id));
         if (user) {
             req.user = user;

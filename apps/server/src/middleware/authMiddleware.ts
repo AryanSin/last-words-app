@@ -3,6 +3,7 @@ import { registerUserType } from "@shared/types/apiTypes";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env";
+import redis from "../config/redis";
 import TokenPayload from "../interfaces/webTokenInterface";
 import userServices from "../services/userServices";
 import AppError from "../utils/AppError";
@@ -46,6 +47,13 @@ export const authenticateToken = async (
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+
+    // Check if token was explicitly revoked on logout
+    const isRevoked = await redis.get(`revoked_token:${token}`).catch(() => null);
+    if (isRevoked) {
+      throw new AppError("Access token has been revoked. Please sign in again.", 401);
+    }
+
     const user = await userServices.getUserById(Number(decoded.id));
 
     if (!user) {
@@ -86,6 +94,13 @@ export const optionalAuthenticateToken = async (
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+
+    // Check if token was explicitly revoked on logout
+    const isRevoked = await redis.get(`revoked_token:${token}`).catch(() => null);
+    if (isRevoked) {
+      throw new AppError("Access token has been revoked. Please sign in again.", 401);
+    }
+
     const user = await userServices.getUserById(Number(decoded.id));
 
     if (user) {

@@ -5,8 +5,13 @@ const JWT_SECRET = process.env.JWT_SECRET || "jwt_secret_change_for_last_words_1
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || "";
+const REDIS_URL = process.env.REDIS_URL || "";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_IOS_CLIENT_ID = process.env.GOOGLE_IOS_CLIENT_ID || "";
+const GOOGLE_ANDROID_CLIENT_ID = process.env.GOOGLE_ANDROID_CLIENT_ID || "";
+const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || "";
 const WHATSAPP_PROVIDER = (process.env.WHATSAPP_PROVIDER || "dev").toLowerCase();
 
 // Twilio Config
@@ -24,14 +29,19 @@ const MESSAGE_ENCRYPTION_SECRET =
   "message_encryption_secret_for_last_words_1234321";
 
 export {
+  GOOGLE_ANDROID_CLIENT_ID,
   GOOGLE_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
   JWT_SECRET,
   MESSAGE_ENCRYPTION_SECRET,
   META_PHONE_NUMBER_ID,
   META_WHATSAPP_TOKEN,
   PORT,
   REDIS_HOST,
+  REDIS_PASSWORD,
   REDIS_PORT,
+  REDIS_URL,
   TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN,
   TWILIO_WHATSAPP_NUMBER,

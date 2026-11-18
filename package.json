@@ -22,5 +22,13 @@
   "devDependencies": {
     "prettier-plugin-organize-imports": "^4.3.0",
     "tsconfig-paths": "^4.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "prisma"
+    ]
   }
 }
