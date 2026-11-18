@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import * as WebBrowser from "expo-web-browser";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,12 +16,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GoogleIcon } from "../../components/GoogleIcon";
 import { useTheme } from "../../hooks/use-theme-color";
 import { biometricService } from "../../services/biometricService";
 import { tokenStorage } from "../../services/tokenStorage";
 import { useAuthStore } from "../../store/useAuthStore";
 
-type AuthMode = "login" | "register" | "whatsapp";
+WebBrowser.maybeCompleteAuthSession();
+
+type AuthMode = "login" | "register";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,22 +32,177 @@ export default function LoginScreen() {
 
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
-  const sendWhatsAppOtp = useAuthStore((s) => s.sendWhatsAppOtp);
-  const verifyWhatsAppOtp = useAuthStore((s) => s.verifyWhatsAppOtp);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Form Fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
 
   const [canBiometricUnlock, setCanBiometricUnlock] = useState(false);
   const [biometricType, setBiometricType] = useState("Biometrics");
+
+  // Google OAuth Configuration
+  // Google strictly separates client types in Google Cloud Console.
+  // A 'Web application' client type strictly disallows mobile custom scheme URIs (e.g. mobile:// or com.lastwords.app:/).
+  // Native mobile platforms require their own Android/iOS Client IDs created in Google Cloud Console.
+  const webClientId =
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+    "840121535735-1thurhpb5ie0nlfclljnn84jo1snsp1s.apps.googleusercontent.com";
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const androidClientId =
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+    (process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID &&
+    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID !== webClientId
+      ? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
+      : undefined);
+
+  const authConfig = useMemo(() => {
+    return {
+      webClientId,
+      iosClientId: iosClientId || (Platform.OS === "ios" ? "ios-client-id-pending" : undefined),
+      androidClientId:
+        androidClientId || (Platform.OS === "android" ? "android-client-id-pending" : undefined),
+      redirectUri: Platform.select({
+        android: "com.lastwords.app:/oauthredirect",
+        ios: "com.lastwords.app:/oauthredirect",
+        default: undefined,
+      }),
+      selectAccount: true,
+    };
+  }, [webClientId, iosClientId, androidClientId]);
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(authConfig);
+
+  useEffect(() => {
+    if (request) {
+      console.log("\n=======================================================");
+      console.log("👉 GOOGLE OAUTH CONFIGURATION:");
+      console.log("Client ID:   ", (request as any).clientId);
+      console.log("Redirect URI:", request.redirectUri);
+      console.log("Add this exact Redirect URI to Google Cloud Console");
+      console.log("under Authorized redirect URIs for the above Client ID.");
+      console.log("=======================================================\n");
+    }
+  }, [request]);
+
+  const handleGoogleSignInWithToken = useCallback(
+    async (idToken: string) => {
+      setGoogleLoading(true);
+      try {
+        await loginWithGoogle(idToken);
+        router.replace("/(tabs)");
+      } catch (err: any) {
+        Alert.alert(
+          "Google Authentication Failed",
+          err.message ||
+            "Failed to authenticate with Google. Please check your network and credentials.",
+        );
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [loginWithGoogle, router],
+  );
+
+  // Handle Google OAuth deep link / redirect responses
+  useEffect(() => {
+    if (response?.type === "success") {
+      const token =
+        response.params?.id_token ||
+        (response as any).authentication?.idToken ||
+        response.params?.access_token ||
+        (response as any).authentication?.accessToken;
+
+      if (token) {
+        setTimeout(() => {
+          handleGoogleSignInWithToken(token);
+        }, 0);
+      }
+    } else if (response?.type === "error") {
+      Alert.alert(
+        "Google Sign-In Failed",
+        response.error?.message || "Google authentication failed. Please try again.",
+      );
+    }
+  }, [response, handleGoogleSignInWithToken]);
+
+  const handleGoogleAuthPress = async () => {
+    // Prevent sending a Web Client ID with custom scheme on Android
+    if (Platform.OS === "android" && !androidClientId) {
+      Alert.alert(
+        "Android Client ID Required",
+        "Google rejects 'Web' Client IDs with custom mobile URI schemes (custom scheme URIs are not allowed for 'WEB' client type).\n\n" +
+          "To enable Google Sign-In on Android:\n" +
+          "1. Open Google Cloud Console -> Credentials\n" +
+          "2. Click Create Credentials -> OAuth client ID\n" +
+          "3. Select Application type: 'Android'\n" +
+          "4. Package name: com.lastwords.app\n" +
+          "5. Add your SHA-1 certificate fingerprint\n" +
+          "6. Put EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID in apps/mobile/.env",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
+    // Prevent sending a Web Client ID with custom scheme on iOS
+    if (Platform.OS === "ios" && !iosClientId) {
+      Alert.alert(
+        "iOS Client ID Required",
+        "Google rejects 'Web' Client IDs with custom mobile URI schemes (custom scheme URIs are not allowed for 'WEB' client type).\n\n" +
+          "To enable Google Sign-In on iOS:\n" +
+          "1. Open Google Cloud Console -> Credentials\n" +
+          "2. Click Create Credentials -> OAuth client ID\n" +
+          "3. Select Application type: 'iOS'\n" +
+          "4. Bundle ID: com.lastwords.app\n" +
+          "5. Put EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in apps/mobile/.env",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
+    if (!request) {
+      Alert.alert(
+        "Google Sign-In Initializing",
+        "Google Sign-In is still preparing. Please try again in a moment.",
+      );
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      const res = await promptAsync();
+      if (res?.type === "success") {
+        const token =
+          res.params?.id_token ||
+          (res as any).authentication?.idToken ||
+          res.params?.access_token ||
+          (res as any).authentication?.accessToken;
+
+        if (token) {
+          await handleGoogleSignInWithToken(token);
+        } else {
+          Alert.alert(
+            "Google Sign-In",
+            "No authentication token was received from Google. Please try again.",
+          );
+        }
+      } else if (res?.type === "error") {
+        Alert.alert(
+          "Google Sign-In Failed",
+          res.error?.message || "Google authentication failed. Please try again.",
+        );
+      }
+    } catch (err: any) {
+      Alert.alert("Google Sign-In Error", err?.message || "Unable to open Google sign-in window.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -89,41 +249,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSendOtp = async () => {
-    if (!phoneNumber.trim()) {
-      Alert.alert("Error", "Please enter your WhatsApp number (e.g. +14155552671).");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await sendWhatsAppOtp(phoneNumber.trim());
-      setOtpSent(true);
-      Alert.alert("OTP Sent", "Verification code sent to WhatsApp.");
-    } catch (err: any) {
-      Alert.alert("OTP Failed", err.message || "Failed to send WhatsApp OTP.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otp.trim() || otp.length !== 6) {
-      Alert.alert("Error", "Please enter the 6-digit verification code.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await verifyWhatsAppOtp(phoneNumber.trim(), otp.trim(), name.trim() || undefined);
-      router.replace("/(tabs)");
-    } catch (err: any) {
-      Alert.alert("Verification Failed", err.message || "Invalid OTP code.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
@@ -141,7 +266,7 @@ export default function LoginScreen() {
 
           {/* Mode Tabs */}
           <View style={[styles.tabContainer, { backgroundColor: colors.surfaceRaised }]}>
-            {(["login", "register", "whatsapp"] as AuthMode[]).map((tab) => {
+            {(["login", "register"] as AuthMode[]).map((tab) => {
               const isSelected = mode === tab;
               return (
                 <TouchableOpacity
@@ -152,7 +277,6 @@ export default function LoginScreen() {
                   ]}
                   onPress={() => {
                     setMode(tab);
-                    setOtpSent(false);
                   }}
                 >
                   <Text
@@ -161,7 +285,7 @@ export default function LoginScreen() {
                       { color: isSelected ? "#FFFFFF" : colors.textMuted },
                     ]}
                   >
-                    {tab === "login" ? "Log In" : tab === "register" ? "Sign Up" : "WhatsApp"}
+                    {tab === "login" ? "Log In" : "Sign Up"}
                   </Text>
                 </TouchableOpacity>
               );
@@ -190,170 +314,95 @@ export default function LoginScreen() {
               </View>
             )}
 
-            {mode !== "whatsapp" ? (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.textMuted }]}>Email Address</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.inputBackground,
-                        borderColor: colors.border,
-                        color: colors.text,
-                      },
-                    ]}
-                    placeholder="you@example.com"
-                    placeholderTextColor={colors.textSubtle}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>Email Address</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.textSubtle}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.textMuted }]}>Password</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.inputBackground,
-                        borderColor: colors.border,
-                        color: colors.text,
-                      },
-                    ]}
-                    placeholder="••••••••"
-                    placeholderTextColor={colors.textSubtle}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
-                </View>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>Password</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textSubtle}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    { backgroundColor: colors.primary },
-                    loading && styles.buttonDisabled,
-                  ]}
-                  onPress={handleEmailAuth}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>
-                      {mode === "login" ? "Sign In to Last Words" : "Create Last Words Account"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                {!otpSent ? (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.textMuted }]}>Your Name (Optional)</Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: colors.inputBackground,
-                            borderColor: colors.border,
-                            color: colors.text,
-                          },
-                        ]}
-                        placeholder="John Doe"
-                        placeholderTextColor={colors.textSubtle}
-                        value={name}
-                        onChangeText={setName}
-                      />
-                    </View>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: colors.primary },
+                (loading || googleLoading) && styles.buttonDisabled,
+              ]}
+              onPress={handleEmailAuth}
+              disabled={loading || googleLoading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {mode === "login" ? "Sign In to Last Words" : "Create Last Words Account"}
+                </Text>
+              )}
+            </TouchableOpacity>
 
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.textMuted }]}>WhatsApp Phone Number (E.164)</Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: colors.inputBackground,
-                            borderColor: colors.border,
-                            color: colors.text,
-                          },
-                        ]}
-                        placeholder="+14155552671"
-                        placeholderTextColor={colors.textSubtle}
-                        value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                      />
-                    </View>
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textMuted }]}>OR</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
 
-                    <TouchableOpacity
-                      style={[
-                        styles.primaryButton,
-                        { backgroundColor: colors.primary },
-                        loading && styles.buttonDisabled,
-                      ]}
-                      onPress={handleSendOtp}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                      ) : (
-                        <Text style={styles.primaryButtonText}>Send WhatsApp OTP</Text>
-                      )}
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.textMuted }]}>6-Digit Verification Code</Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            backgroundColor: colors.inputBackground,
-                            borderColor: colors.border,
-                            color: colors.text,
-                          },
-                        ]}
-                        placeholder="123456"
-                        placeholderTextColor={colors.textSubtle}
-                        value={otp}
-                        onChangeText={setOtp}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                      />
-                    </View>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.primaryButton,
-                        { backgroundColor: colors.primary },
-                        loading && styles.buttonDisabled,
-                      ]}
-                      onPress={handleVerifyOtp}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                      ) : (
-                        <Text style={styles.primaryButtonText}>Verify & Continue</Text>
-                      )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.secondaryButton}
-                      onPress={() => setOtpSent(false)}
-                    >
-                      <Text style={[styles.secondaryButtonText, { color: colors.textMuted }]}>Change Phone Number</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </>
-            )}
+            {/* Google Authentication Button */}
+            <TouchableOpacity
+              style={[
+                styles.googleButton,
+                {
+                  backgroundColor: colors.surfaceRaised,
+                  borderColor: colors.border,
+                },
+                (googleLoading || loading) && styles.buttonDisabled,
+              ]}
+              onPress={handleGoogleAuthPress}
+              disabled={googleLoading || loading}
+              activeOpacity={0.8}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={colors.text} size="small" />
+              ) : (
+                <>
+                  <GoogleIcon size={20} />
+                  <Text style={[styles.googleButtonText, { color: colors.text }]}>
+                    {mode === "login" ? "Sign In with Google" : "Sign Up with Google"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
 
           {canBiometricUnlock && mode === "login" && (
@@ -459,12 +508,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  secondaryButton: {
-    marginTop: 12,
+  dividerContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginVertical: 18,
   },
-  secondaryButtonText: {
-    fontSize: 13,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 13,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
   biometricButton: {
     flexDirection: "row",

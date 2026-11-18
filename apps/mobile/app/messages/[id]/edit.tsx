@@ -32,8 +32,7 @@ export default function EditMessageScreen() {
   const [content, setContent] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [recipientPhone, setRecipientPhone] = useState("");
-  const [deliveryChannel, setDeliveryChannel] = useState<Channel>("EMAIL");
+  const deliveryChannel: Channel = "EMAIL";
   const [triggerDays, setTriggerDays] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -52,8 +51,6 @@ export default function EditMessageScreen() {
       setContent(message.content || "");
       setRecipientName(message.recipientName || "");
       setRecipientEmail(message.recipientEmail || "");
-      setRecipientPhone(message.recipientPhone || "");
-      setDeliveryChannel(message.deliveryChannel || "EMAIL");
       setTriggerDays(
         message.triggerAfterDays !== null && message.triggerAfterDays !== undefined
           ? message.triggerAfterDays.toString()
@@ -72,21 +69,8 @@ export default function EditMessageScreen() {
       return;
     }
 
-    if (
-      (deliveryChannel === "EMAIL" || deliveryChannel === "BOTH") &&
-      !recipientEmail.trim()
-    ) {
+    if (!recipientEmail.trim()) {
       const err = "Please provide a valid recipient email address.";
-      setErrorMessage(err);
-      if (Platform.OS !== "web") Alert.alert("Validation Error", err);
-      return;
-    }
-
-    if (
-      (deliveryChannel === "WHATSAPP" || deliveryChannel === "BOTH") &&
-      !recipientPhone.trim()
-    ) {
-      const err = "Please provide a recipient WhatsApp number in E.164 format (e.g. +14155552671).";
       setErrorMessage(err);
       if (Platform.OS !== "web") Alert.alert("Validation Error", err);
       return;
@@ -99,15 +83,8 @@ export default function EditMessageScreen() {
         title: title.trim() || undefined,
         content: content.trim(),
         recipientName: recipientName.trim() || undefined,
-        recipientEmail:
-          deliveryChannel === "EMAIL" || deliveryChannel === "BOTH"
-            ? recipientEmail.trim()
-            : undefined,
-        recipientPhone:
-          deliveryChannel === "WHATSAPP" || deliveryChannel === "BOTH"
-            ? recipientPhone.trim()
-            : undefined,
-        deliveryChannel,
+        recipientEmail: recipientEmail.trim(),
+        deliveryChannel: "EMAIL" as Channel,
         triggerAfterDays: triggerDays.trim() ? parseInt(triggerDays.trim(), 10) : undefined,
       };
 
@@ -190,35 +167,6 @@ export default function EditMessageScreen() {
             </View>
           ) : null}
 
-          {/* Channel Selector */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Delivery Channel</Text>
-            <View style={[styles.channelRow, { backgroundColor: colors.surfaceRaised }]}>
-              {(["EMAIL", "WHATSAPP", "BOTH"] as Channel[]).map((ch) => {
-                const isSelected = deliveryChannel === ch;
-                return (
-                  <TouchableOpacity
-                    key={ch}
-                    style={[
-                      styles.channelTab,
-                      isSelected && { backgroundColor: colors.primary },
-                    ]}
-                    onPress={() => setDeliveryChannel(ch)}
-                  >
-                    <Text
-                      style={[
-                        styles.channelText,
-                        { color: isSelected ? "#FFFFFF" : colors.textMuted },
-                      ]}
-                    >
-                      {ch}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
           {/* Title */}
           <View style={styles.section}>
             <Text style={[styles.label, { color: colors.textMuted }]}>Message Title (Optional)</Text>
@@ -280,48 +228,25 @@ export default function EditMessageScreen() {
             />
           </View>
 
-          {(deliveryChannel === "EMAIL" || deliveryChannel === "BOTH") && (
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Recipient Email (Required for Email delivery)</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                placeholder="recipient@example.com"
-                placeholderTextColor={colors.textSubtle}
-                value={recipientEmail}
-                onChangeText={setRecipientEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-          )}
-
-          {(deliveryChannel === "WHATSAPP" || deliveryChannel === "BOTH") && (
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Recipient WhatsApp (Required, E.164 format e.g. +14155552671)</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                placeholder="+14155552671"
-                placeholderTextColor={colors.textSubtle}
-                value={recipientPhone}
-                onChangeText={setRecipientPhone}
-                keyboardType="phone-pad"
-              />
-            </View>
-          )}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Recipient Email (Required for delivery)</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholder="recipient@example.com"
+              placeholderTextColor={colors.textSubtle}
+              value={recipientEmail}
+              onChangeText={setRecipientEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
           {/* Custom Trigger Override */}
           <View style={styles.section}>

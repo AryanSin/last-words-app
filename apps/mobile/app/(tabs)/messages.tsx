@@ -18,8 +18,6 @@ import { VaultMessageCard } from "../../components/VaultMessageCard";
 import { useTheme } from "../../hooks/use-theme-color";
 import { MessageItem, useDeleteMessage, useMessages } from "../../hooks/useMessages";
 
-type FilterType = "ALL" | "WHATSAPP" | "EMAIL";
-
 export default function MessagesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -29,15 +27,9 @@ export default function MessagesScreen() {
   const deleteMutation = useDeleteMessage();
 
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<FilterType>("ALL");
 
   const rawMessages = data?.messages || [];
-  const filteredMessages = rawMessages.filter((msg) => {
-    if (filter === "ALL") return true;
-    if (filter === "WHATSAPP") return msg.deliveryChannel === "WHATSAPP" || msg.deliveryChannel === "BOTH";
-    if (filter === "EMAIL") return msg.deliveryChannel === "EMAIL" || msg.deliveryChannel === "BOTH";
-    return true;
-  });
+  const filteredMessages = rawMessages;
 
   const performDelete = async (id: number) => {
     try {
@@ -68,35 +60,6 @@ export default function MessagesScreen() {
           <Ionicons name="add" size={18} color="#FFFFFF" />
           <Text style={styles.composeBtnText}>Compose</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.filterRow}>
-        {(["ALL", "WHATSAPP", "EMAIL"] as FilterType[]).map((tab) => {
-          const isSelected = filter === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: isSelected ? colors.primary : colors.surfaceRaised,
-                  borderColor: isSelected ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => setFilter(tab)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  { color: isSelected ? "#FFFFFF" : colors.textMuted },
-                ]}
-              >
-                {tab === "ALL" ? "All" : tab === "WHATSAPP" ? "WhatsApp" : "Email"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
       </View>
     </View>
   );
@@ -143,9 +106,7 @@ export default function MessagesScreen() {
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>No Messages Found</Text>
               <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-                {filter === "ALL"
-                  ? "Create your first message to be dispatched upon confirmed inactivity."
-                  : `No messages configured for channel ${filter}.`}
+                Create your first message to be dispatched upon confirmed inactivity.
               </Text>
               <TouchableOpacity
                 style={[styles.emptyBtn, { backgroundColor: colors.primary }]}

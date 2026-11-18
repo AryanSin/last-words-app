@@ -8,6 +8,9 @@
       ],
       "@shared/*": [
         "../../packages/shared/src/*"
+      ],
+      "@lastwords/shared/*": [
+        "../../packages/shared/src/*"
       ]
     }
   },

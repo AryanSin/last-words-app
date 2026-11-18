@@ -2,12 +2,15 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
 import { Colors } from "../constants/theme";
 import { useColorScheme } from "../hooks/use-color-scheme";
 import { useAuthStore } from "../store/useAuthStore";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export const unstable_settings = {
   anchor: "(tabs)",

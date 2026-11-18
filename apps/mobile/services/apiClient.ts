@@ -77,6 +77,7 @@ export const apiRequest = async <T = any>(
   const response = await fetch(url, {
     ...options,
     headers,
+    signal: options.signal || AbortSignal.timeout(8000),
   });
 
   const json: ApiResponse<T> = await response.json().catch(() => ({
@@ -90,7 +91,8 @@ export const apiRequest = async <T = any>(
     !isRetry &&
     endpoint !== "/auth/login" &&
     endpoint !== "/auth/register" &&
-    endpoint !== "/auth/refresh"
+    endpoint !== "/auth/refresh" &&
+    endpoint !== "/auth/logout"
   ) {
     const refreshToken = await tokenStorage.getRefreshToken();
     if (!refreshToken) {
@@ -108,6 +110,7 @@ export const apiRequest = async <T = any>(
             "X-Client-Platform": Platform.OS,
           },
           body: JSON.stringify({ refreshToken }),
+          signal: AbortSignal.timeout(5000),
         });
 
         const refreshJson: ApiResponse<{ accessToken: string; refreshToken: string }> =
@@ -229,6 +232,7 @@ export const api = {
             "X-Client-Platform": Platform.OS,
           },
           body: JSON.stringify({ refreshToken }),
+          signal: AbortSignal.timeout(5000),
         });
 
         const refreshJson: ApiResponse<{ accessToken: string; refreshToken: string }> =
@@ -247,17 +251,27 @@ export const api = {
 
     async logout() {
       const refreshToken = await tokenStorage.getRefreshToken();
-      if (refreshToken) {
+      const accessToken = await tokenStorage.getAccessToken();
+
+      // Immediately clear local credentials
+      await tokenStorage.clearSession();
+
+      if (refreshToken || accessToken) {
         try {
-          await apiRequest("/auth/logout", {
+          await fetch(`${API_BASE_URL}/auth/logout`, {
             method: "POST",
-            body: JSON.stringify({ refreshToken }),
+            headers: {
+              "Content-Type": "application/json",
+              "X-Client-Platform": Platform.OS,
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+            body: JSON.stringify({ refreshToken: refreshToken || "" }),
+            signal: AbortSignal.timeout(2500),
           });
         } catch {
-          // Continue local cleanup even if network fails
+          // Ignore network errors on logout
         }
       }
-      await tokenStorage.clearSession();
     },
   },
 
