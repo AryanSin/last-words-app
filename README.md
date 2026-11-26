@@ -1,30 +1,30 @@
 # Last Words
 
-An automated dead man's switch, cryptographic vault, and scheduled message delivery platform. Messages and sensitive instructions are securely encrypted at rest (AES-256-GCM) and automatically dispatched to designated recipients via Email and WhatsApp when a user's inactivity threshold is reached.
+An automated dead man's switch, cryptographic vault, and scheduled message delivery platform. Messages and sensitive instructions are securely encrypted at rest (AES-256-GCM) and automatically dispatched to designated recipients via Email when a user's inactivity threshold is reached.
 
 ---
 
 ## Features
 
-- **Dead Man's Switch Inactivity Detection**: Background cron monitors evaluate user heartbeats against customizable inactivity thresholds (e.g. 30, 90, 365 days).
+- **Dead Man's Switch Inactivity Detection**: Background cron monitors evaluate user heartbeats against customizable inactivity thresholds (e.g. 30, 60, 90, 180, 365 days; up to 3,650 days).
 - **Biometric Heartbeat & Check-In**: Mobile app integrates biometric hardware authentication (Face ID, Touch ID, Fingerprint via `expo-local-authentication`) with an interactive pulsing heartbeat button (`LifePulseButton`) to reset the timer effortlessly.
-- **Radial Countdown & Urgency Visualizer**: Dashboard displays an SVG radial countdown (`RadialCountdown`) indicating days remaining until the nearest scheduled dispatch, alerting users if they enter critical limit territory ($\le 7$ days).
+- **Radial Countdown & Inactivity Safety Net**: Dashboard displays an SVG radial countdown (`RadialCountdown`) indicating days remaining until the nearest scheduled dispatch, alerting users in critical territory ($\le 7$ days), paired with a 3-stage Inactivity Safety Net timeline (14-day advance reminder, 7-day urgent warning, 24-hour grace period).
 - **Zero-Knowledge Encrypted Vault**: All stored message titles and message contents are encrypted at rest using authenticated **AES-256-GCM** with random initialization vectors (IV) and authentication tags.
-- **Multi-Channel Dispatch Engine**: Automated delivery via **Email** (Nodemailer with SMTP or Ethereal test accounts) and **WhatsApp** (Twilio, Meta WhatsApp Cloud API, or local dev mock).
+- **Automated Email Dispatch Engine**: Reliable delivery via **Email** (Nodemailer with SMTP or automatic Ethereal virtual test accounts in development).
+- **Vault Search, Filtering & Guidance**: Mobile vault supports instant search across titles, recipients, and content, segmented status filters (`ALL`, `ARMED`, `DISPATCHED`), live autonomous dispatch previews during authoring/editing, and an in-app `VaultGuideModal` FAQ.
 - **Resilient Distributed Queues**: Built on **BullMQ** and **Redis** with concurrency controls, automatic exponential backoff retries, and comprehensive delivery audit logs (`DeliveryEvent`, `JobExecution`).
-- **Platform-Aware Authentication**: 
-  - Email & Password (bcrypt hashed)
-  - Google OAuth ID token verification
-  - WhatsApp passwordless OTP with Redis TTL expiration
-  - Platform-aware JWT lifetimes (extended sliding-window sessions for mobile, automatic silent background refresh, and seamless session expiration handling)
+- **Platform-Aware Authentication**:
+  - Email & Password (`bcrypt` hashed)
+  - Google OAuth ID token verification (multi-client support for Web, Android, and iOS with `userinfo`/`tokeninfo` fallbacks)
+  - Platform-aware JWT lifetimes (extended sliding-window sessions for mobile, automatic silent background refresh, and explicit Redis access-token revocation on logout)
 - **Push Reminders**: Native push alerts via Expo Notifications warning users of impending triggers or prompting periodic check-ins.
-- **Redis Sliding-Window Rate Limiting**: Tiered distributed rate limiters protecting authentication, vault access, and public endpoints.
+- **Redis Sliding-Window Rate Limiting**: Tiered distributed rate limiters protecting authentication, vault access, jobs, metrics, and public endpoints.
 
 ---
 
 ## Monorepo Architecture
 
-The repository is organized as a **pnpm monorepo** with shared validation schemas and types:
+The repository is organized as a **pnpm monorepo** (`pnpm-workspace.yaml`) with shared validation schemas and types:
 
 ```
 last-words-app/
@@ -34,27 +34,34 @@ last-words-app/
 │   │   └── src/
 │   │       ├── server.ts        # HTTP API entrypoint (Express REST API, port 3000)
 │   │       ├── worker.ts        # Dedicated Background Worker entrypoint (BullMQ, Crons)
-│   │       ├── config/          # Environment variables, Redis, Prisma, Swagger
-│   │       ├── controllers/     # Route controllers (Auth, Users, Messages, Jobs, Metrics)
-│   │       ├── integrations/    # Email (Nodemailer), WhatsApp (Twilio/Meta), Google Auth
-│   │       ├── jobs/            # Scheduled cron jobs (Message triggers, Push reminders)
-│   │       ├── middleware/      # Rate limiters, JWT auth, Zod validation
+│   │       ├── app.ts           # Express app wiring, middleware & route mounting
+│   │       ├── config/          # Environment variables, Redis (URL/TLS + host), Prisma
+│   │       ├── controllers/     # Route controllers (Auth, Users, Messages, Metrics)
+│   │       ├── docs/            # OpenAPI / Swagger specification & UI (/docs)
+│   │       ├── integrations/    # Email (Nodemailer), Google OAuth (multi-client verification)
+│   │       ├── jobs/            # Scheduled cron jobs (Hourly trigger check, Daily push reminders)
+│   │       ├── middleware/      # Rate limiters, JWT & Redis revocation auth, Zod validation
 │   │       ├── queues/          # BullMQ queue definitions ('message-delivery')
-│   │       ├── scripts/         # End-to-end verification and biometric test scripts
-│   │       ├── services/        # Business logic, OTP, crypto engine (AES-256-GCM)
+│   │       ├── scripts/         # End-to-end verification, metric seeding & biometric test scripts
+│   │       ├── services/        # Business logic, crypto engine (AES-256-GCM), push reminders
+│   │       ├── templates/       # Transactional & vault email HTML templates
 │   │       ├── utils/           # Structured logging (Pino), tokens, pagination
 │   │       └── workers/         # BullMQ async delivery worker
-│   └── mobile/                  # React Native mobile app (Expo SDK 55, React Native 0.81, React 19)
-│       ├── app/                 # File-based routes ((auth), (tabs), messages/[id])
-│       ├── components/          # UI components (LifePulseButton, RadialCountdown, VaultMessageCard)
-│       ├── constants/           # Deep Midnight Obsidian & Radiant Cyan design system
+│   └── mobile/                  # React Native mobile app (Expo SDK 58, React Native 0.88, React 19.3)
+│       ├── app/                 # File-based routes ((auth)/login, (tabs), messages/[id], messages/[id]/edit, messages/create)
+│       ├── components/          # UI components (LifePulseButton, RadialCountdown, VaultMessageCard, VaultGuideModal, SecurityAuthModal, ConfirmModal, GoogleIcon)
+│       ├── constants/           # Midnight Obsidian Vault design system tokens (theme.ts)
 │       ├── hooks/               # Custom TanStack React Query hooks, theme color hooks
-│       ├── services/            # Biometric service (LocalAuthentication), API client
-│       └── store/               # Zustand authentication & state management
+│       ├── services/            # Biometric service, API client, Push notifications, Token storage
+│       ├── store/               # Zustand authentication & session state management
+│       └── eas.json             # Expo Application Services (EAS) build & submit profiles
 ├── packages/
-│   └── shared/                  # @shared package: Zod schemas & TypeScript types
+│   └── shared/                  # @lastwords/shared package: Zod schemas & TypeScript types
 ├── docker/                      # Dockerfiles (Dockerfile.server)
 ├── k8s/                         # Kubernetes manifests (StatefulSet, Deployments, Services)
+├── DESIGN.md                    # Midnight Obsidian Vault UI/UX design system specification
+├── PRODUCT.md                   # Product positioning, capabilities & brand commitments
+├── pnpm-workspace.yaml          # pnpm monorepo workspace configuration
 └── docker-compose.yml           # Multi-container orchestration (PostgreSQL 15, Redis 7, API, Worker)
 ```
 
@@ -86,6 +93,8 @@ Spin up PostgreSQL 15 and Redis 7 (with health checks configured):
 docker compose up -d postgres redis
 ```
 
+> **Note**: In `docker-compose.yml`, PostgreSQL is mapped to host port **`5433`** (`5433:5432`) while internal container-to-container traffic uses `postgres:5432`.
+
 *(Optional: To run the backend inside Docker as well, run `docker compose up -d`)*
 
 ### 3. Environment Variables Configuration
@@ -93,47 +102,57 @@ docker compose up -d postgres redis
 #### Backend Configuration (`apps/server/.env`):
 
 ```env
-# Database & Network
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/last_words?schema=public"
+# Server
 PORT=3000
-NODE_ENV="development"
+NODE_ENV=development
+LOG_LEVEL=debug
 
-# Security & Tokens
-JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
-CRYPTO_MASTER_KEY="your-32-byte-hex-encoded-aes-encryption-key" # 64 hex characters
+# PostgreSQL Database Connection
+# Use port 5433 when connecting from host to Docker Compose Postgres (or 5432 for local native Postgres)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/last_words?schema=public"
 
-# Redis & BullMQ
-REDIS_HOST="localhost"
+# Redis Connection (Rate Limiting, Refresh Tokens, Revoked Tokens, BullMQ Queues)
+# Use either REDIS_URL (e.g. Upstash / Render: "rediss://default:password@host:port") OR REDIS_HOST + REDIS_PORT
+REDIS_URL=""
+REDIS_HOST=localhost
 REDIS_PORT=6379
+REDIS_PASSWORD=""
+
+# Security & Encryption
+JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
+MESSAGE_ENCRYPTION_SECRET="your-32-byte-aes-encryption-secret"
 
 # Email Service (Nodemailer)
 # Leave blank to automatically use an Ethereal virtual mailbox in development
 SMTP_HOST=""
 SMTP_PORT=587
+SMTP_SECURE=false
 SMTP_USER=""
 SMTP_PASS=""
 SMTP_FROM="Last Words <noreply@lastwords.app>"
 
-# WhatsApp Gateway ("dev" | "twilio" | "meta")
-WHATSAPP_PROVIDER="dev"
-
-# Twilio (Optional - Required if WHATSAPP_PROVIDER="twilio")
-TWILIO_ACCOUNT_SID=""
-TWILIO_AUTH_TOKEN=""
-TWILIO_WHATSAPP_NUMBER=""
-
-# Meta WhatsApp Cloud API (Optional - Required if WHATSAPP_PROVIDER="meta")
-META_WHATSAPP_TOKEN=""
-META_PHONE_NUMBER_ID=""
-
-# Google OAuth 2.0 (Optional)
+# Google OAuth 2.0 (Optional in dev)
 GOOGLE_CLIENT_ID=""
+GOOGLE_WEB_CLIENT_ID=""
+GOOGLE_ANDROID_CLIENT_ID=""
+GOOGLE_IOS_CLIENT_ID=""
 ```
 
 #### Mobile App Configuration (`apps/mobile/.env`):
 
 ```env
-EXPO_PUBLIC_API_URL="http://localhost:3000"
+# Expo Public API URL
+# - iOS Simulator / Web: http://localhost:3000
+# - Android Emulator: http://10.0.2.2:3000
+# - Physical Mobile Device on same Wi-Fi: http://<YOUR_PC_IP>:3000
+EXPO_PUBLIC_API_URL=http://localhost:3000
+
+# Google OAuth Client IDs (Expo Public)
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=""
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=""
+# Native Mobile Client IDs (required for standalone/dev-client Android & iOS builds)
+# EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=""
+# EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=""
 ```
 
 > **Note for Physical Devices**: Replace `localhost` with your machine's LAN IP address (e.g. `http://192.168.1.50:3000`) so mobile devices can reach the local API server.
@@ -182,6 +201,7 @@ From the monorepo root:
 | `pnpm typecheck` | Run TypeScript type checks across all workspaces (`server`, `mobile`, `shared`) |
 | `pnpm build` | Compile backend TypeScript to production JavaScript |
 | `pnpm test` | Run Vitest unit & integration test suites |
+| `pnpm lint` | Run ESLint across workspaces |
 
 ---
 
@@ -204,6 +224,9 @@ pnpm --filter server exec ts-node -r tsconfig-paths/register src/scripts/testPus
 
 # Test message urgency sorting
 pnpm --filter server exec ts-node -r tsconfig-paths/register src/scripts/testUrgencySorting.ts
+
+# Test switch status countdown calculations
+pnpm --filter server exec ts-node -r tsconfig-paths/register src/scripts/testSwitchStatus.ts
 ```
 
 ---
@@ -219,37 +242,38 @@ http://localhost:3000/docs
 
 | Category | Method & Endpoint | Description |
 | :--- | :--- | :--- |
+| **System** | `GET /health` | Service health and uptime check |
 | **Auth** | `POST /auth/register` | Register new user with email and password |
 | **Auth** | `POST /auth/login` | Authenticate with email and password |
-| **Auth** | `POST /auth/google` | Sign in / register via Google ID token |
-| **Auth** | `POST /auth/whatsapp/send-otp` | Request a 6-digit WhatsApp OTP |
-| **Auth** | `POST /auth/whatsapp/verify-otp` | Verify OTP and authenticate |
+| **Auth** | `POST /auth/google` | Sign in / register via Google OAuth token |
 | **Auth** | `POST /auth/refresh` | Rotate and issue fresh token pair (platform-aware) |
-| **Auth** | `POST /auth/logout` | Revoke active refresh token from Redis |
+| **Auth** | `POST /auth/logout` | Revoke active refresh token and blacklist access token in Redis |
+| **Auth** | `POST /auth/check-in` | Authenticated heartbeat check-in via auth router |
 | **Users** | `POST /users/check-in` | Send heartbeat / reset inactivity timer (supports `{ biometricVerified: true, authMethod: "BIOMETRIC" }`) |
 | **Users** | `POST /users/verify-password` | Verify account password for sensitive actions (e.g. disabling biometric pulse check-in) |
 | **Users** | `GET /users/me` | Fetch authenticated user profile and defaults |
 | **Users** | `PATCH /users/me` | Update user profile details |
-| **Users** | `PATCH /users/trigger-days` | Update user-level default inactivity threshold |
-| **Users** | `GET /users/switch-status` | Get countdown status to nearest message trigger and encryption metadata |
+| **Users** | `PATCH /users/:id/default-trigger` | Update user-level default inactivity threshold |
+| **Users** | `GET /users/switch-status` | Get countdown status to nearest message trigger and encryption metadata (`GET /users/me/switch-status` alias) |
 | **Users** | `POST /users/push-token` | Register Expo push notification token |
 | **Users** | `DELETE /users/push-token` | Unregister Expo push notification token |
-| **Messages** | `GET /messages` | Retrieve user's vault messages sorted by urgency |
+| **Messages** | `GET /messages` | Retrieve vault messages (and `GET /messages/me` sorted by urgency) |
 | **Messages** | `GET /messages/:id` | View specific message details (decrypted) |
 | **Messages** | `POST /messages` | Create and encrypt a new vault message |
 | **Messages** | `PATCH /messages/:id` | Update an existing pending message |
-| **Messages** | `DELETE /messages/:id` | Soft-delete / remove message from vault |
+| **Messages** | `DELETE /messages/:id` | Remove message from vault |
+| **Messages** | `POST /messages/test` | Trigger test email delivery (`POST /messages/test-send` alias) & inspect queue (`GET /messages/test/queue`) |
 | **Jobs** | `POST /jobs/trigger-message` | Manually trigger inactivity evaluation & queue dispatch |
 | **Jobs** | `POST /jobs/trigger-reminders` | Manually trigger push reminder check |
-| **Metrics** | `GET /metrics` | Retrieve delivery metrics (sent vs. failed counts) |
+| **Metrics** | `GET /metrics/messages` | Retrieve delivery metrics (sent vs. failed counts) |
 
 ---
 
 ## Security & Architecture Highlights
 
-1. **Payload Encryption at Rest**: Sensitive message titles and message contents are encrypted using **AES-256-GCM** with a 256-bit secret key, unique 96-bit initialization vectors (IVs) per item, and 128-bit authentication tags.
+1. **Payload Encryption at Rest**: Sensitive message titles and message contents are encrypted using **AES-256-GCM** with `MESSAGE_ENCRYPTION_SECRET`, unique 96-bit initialization vectors (IVs) per item, and 128-bit authentication tags.
 2. **Biometric Validation**: Mobile check-ins utilize secure hardware enclaves (Face ID / Touch ID / Android BiometricPrompt) to guarantee authentic user presence before firing heartbeat resets.
-3. **Session Hardening**: Mobile clients receive prolonged sliding refresh tokens that automatically refresh silently in the background, while web clients use stricter short-lived sessions. Revoked tokens are immediately wiped from Redis sets.
-4. **Resilient Message Dispatch**: Inactivity detection queues jobs into BullMQ with exponential backoff retries. If delivery channels fail up to 3 times, messages transition to `FAILED` status and log detailed error telemetry in `DeliveryEvent`.
+3. **Session Hardening**: Mobile clients receive prolonged sliding refresh tokens that automatically refresh silently in the background, while web clients use stricter short-lived sessions. On logout, refresh tokens are wiped and active access tokens are explicitly blacklisted in Redis (`revoked_token:<token>`) until expiration.
+4. **Resilient Message Dispatch**: Hourly inactivity detection (`MESSAGE_TRIGGER_CRON`, default `0 * * * *`) queues jobs into BullMQ with exponential backoff retries. If email delivery fails up to 3 times, messages transition to `FAILED` status and log detailed error telemetry in `DeliveryEvent`.
 5. **Biometric Settings Protection**: Disabling biometric pulse check-in requires re-authentication via Face ID / Touch ID or account password verification (`POST /users/verify-password`), preventing unauthorized tampering on unlocked devices.
-6. **Decoupled 12-Factor Worker Architecture**: The HTTP API server (`src/server.ts`) and background processing engine (`src/worker.ts`) run as isolated OS processes communicating asynchronously through Redis distributed queues (`bull:message-delivery:*`) and PostgreSQL. This guarantees that heavy email dispatches, WhatsApp payloads, or reminder bursts never block the API event loop or introduce latency into mobile user sessions.
+6. **Decoupled 12-Factor Worker Architecture**: The HTTP API server (`src/server.ts`) and background processing engine (`src/worker.ts`) run as isolated OS processes communicating asynchronously through Redis distributed queues (`bull:message-delivery:*`) and PostgreSQL. This guarantees that heavy email dispatches or reminder bursts never block the API event loop or introduce latency into mobile user sessions.

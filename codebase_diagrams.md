@@ -10,8 +10,8 @@ This document provides a comprehensive technical overview of the **Last Words** 
 flowchart TD
     subgraph Clients["Clients Layer"]
         subgraph MobileApp["Expo React Native Mobile App (apps/mobile)"]
-            UI["UI Views & Screens<br/>• Dashboard ((tabs)/index)<br/>• Vault ((tabs)/messages)<br/>• Settings ((tabs)/settings)<br/>• Auth ((auth)/login)"]
-            BioComp["Biometric & Animation Components<br/>• LifePulseButton (Pulse Glow & Haptics)<br/>• RadialCountdown (SVG Progress)<br/>• VaultMessageCard (Urgency & Status)"]
+            UI["UI Views & Screens<br/>• Dashboard ((tabs)/index) + Safety Net Timeline<br/>• Vault ((tabs)/messages) + Search & Filters<br/>• Settings ((tabs)/settings) + VaultGuideModal<br/>• Auth ((auth)/login: Email & Google OAuth)"]
+            BioComp["Biometric & Visual Components<br/>• LifePulseButton (Pulse Glow & Haptics)<br/>• RadialCountdown (SVG Progress)<br/>• VaultMessageCard (Urgency & Status)"]
             BioService["Biometric Service<br/>(expo-local-authentication: Face ID / Touch ID)"]
             Store["Zustand Auth Store (useAuthStore)<br/>• Silent Token Refresh<br/>• Automatic Session Expiry Interceptor"]
             Query["TanStack React Query<br/>(Cache & Data Synchronization)"]
@@ -23,39 +23,38 @@ flowchart TD
         ExpressApp["Express.js HTTP Server (Port 3000)"]
         PlatformDetector["Platform Detector Middleware<br/>(X-Client-Platform: Mobile vs. Web)"]
         GlobalLimiter["Global Sliding Rate Limiter<br/>(Redis-backed)"]
-        AuthMiddleware["JWT Authentication Middleware<br/>(Access & Refresh Tokens)"]
-        RouteRateLimiter["Per-Route Sliding Rate Limiters<br/>(Auth, Users, Messages, Metrics)"]
-        ValidationMiddleware["Zod Validation Layer<br/>(@shared package schemas)"]
+        AuthMiddleware["JWT & Redis Revocation Middleware<br/>(Access, Refresh & revoked_token Blacklist)"]
+        RouteRateLimiter["Per-Route Sliding Rate Limiters<br/>(Auth, Users, Messages, Jobs, Metrics)"]
+        ValidationMiddleware["Zod Validation Layer<br/>(@lastwords/shared package schemas)"]
 
         subgraph Routes["REST API Routers"]
-            AuthRouter["/auth<br/>• Register & Login (bcrypt)<br/>• Google OAuth (ID Token)<br/>• WhatsApp OTP (Redis TTL)<br/>• Platform-aware Token Refresh & Logout"]
+            AuthRouter["/auth<br/>• Register & Login (bcrypt)<br/>• Google OAuth (Multi-Client + Fallback)<br/>• Platform-aware Token Refresh & Logout<br/>• Authenticated Check-In (/check-in)"]
             UserRouter["/users<br/>• User Profile & Default Triggers<br/>• Biometric Heartbeat Check-In<br/>• Switch Status & Countdown<br/>• Password Verification (/verify-password)<br/>• Push Token Registration"]
-            MessageRouter["/messages<br/>• Encrypted Vault CRUD<br/>• Trigger Urgency Sorting<br/>• Message Status Tracking"]
-            JobRouter["/jobs<br/>• Manual Message Trigger<br/>• Manual Push Reminder Check"]
-            MetricRouter["/metrics<br/>• System Delivery Stats"]
+            MessageRouter["/messages<br/>• Encrypted Vault CRUD<br/>• Trigger Urgency Sorting (/me)<br/>• Test Email Dispatch (/test)"]
+            JobRouter["/jobs<br/>• Manual Message Trigger<br/>• Manual Push Reminder Check<br/>• Test Queue Inspection"]
+            MetricRouter["/metrics<br/>• System Delivery Stats (/messages)"]
         end
         
         QueueProducer["BullMQ Queue Producer<br/>('message-delivery')"]
     end
 
     subgraph WorkerService["Dedicated Background Worker Service (src/worker.ts)"]
-        MessageCron["Message Trigger Cron<br/>(Scheduled Midnight / Configurable)"]
-        ReminderCron["Push Reminder Cron<br/>(Scheduled Inactivity Warnings)"]
+        MessageCron["Message Trigger Cron<br/>(Hourly 0 * * * * / Configurable)"]
+        ReminderCron["Push Reminder Cron<br/>(Daily 0 0 * * * / Configurable)"]
         TriggerService["MessageTriggerService<br/>(Threshold Inactivity Scanner)"]
         ReminderService["PushReminderService<br/>(7-day Warning & 5-day Heartbeat)"]
-        Worker["BullMQ Delivery Worker<br/>(Concurrency: 5, Channel Dispatcher)"]
-        CryptoEngine["AES-256-GCM Vault Engine<br/>(Master Key + IV + Auth Tag)"]
+        Worker["BullMQ Email Delivery Worker<br/>(Concurrency: 5)"]
+        CryptoEngine["AES-256-GCM Vault Engine<br/>(MESSAGE_ENCRYPTION_SECRET + IV + Auth Tag)"]
     end
 
     subgraph DataStore["Data & Asynchronous Broker Layer"]
         PostgresDB[("PostgreSQL 15 Database<br/>(Prisma Client: Shared State)")]
-        RedisDB[("Redis 7 In-Memory Store<br/>• BullMQ Job Queue Streams<br/>• Sliding-Window Rate Limits<br/>• Refresh Tokens & OTP Caching")]
+        RedisDB[("Redis 7 In-Memory Store (REDIS_URL / TLS)<br/>• BullMQ Job Queue Streams<br/>• Sliding-Window Rate Limits<br/>• Refresh Tokens & Revoked Token Blacklist")]
     end
 
     subgraph ExternalIntegrations["External Gateways"]
         EmailService["Email Gateway (Nodemailer)<br/>• SMTP Server or Ethereal Virtual Mailbox"]
-        WhatsAppService["WhatsApp Gateway<br/>• Twilio / Meta Cloud API / Mock"]
-        GoogleIdentity["Google Identity Services<br/>• OAuth 2.0 ID Token Verification"]
+        GoogleIdentity["Google Identity Services<br/>• OAuth 2.0 Web / Android / iOS Verification"]
         ExpoPushService["Expo Push Notification Service<br/>• Mobile Inactivity Alerts"]
     end
 
@@ -86,7 +85,6 @@ flowchart TD
     AuthRouter --> PostgresDB
     AuthRouter --> RedisDB
     AuthRouter --> GoogleIdentity
-    AuthRouter --> WhatsAppService
 
     UserRouter --> PostgresDB
     UserRouter --> ExpoPushService
@@ -110,14 +108,13 @@ flowchart TD
     Worker --> CryptoEngine
     Worker --> PostgresDB
     Worker --> EmailService
-    Worker --> WhatsAppService
 ```
 
 ---
 
 ## 2. Database Entity-Relationship (ER) Diagram
 
-The diagram below reflects the PostgreSQL schema managed via Prisma ORM (`apps/server/prisma/schema.prisma`).
+The diagram below models the PostgreSQL schema managed via Prisma ORM (`apps/server/prisma/schema.prisma`) with Email-only delivery and authentication:
 
 ```mermaid
 erDiagram
@@ -129,12 +126,10 @@ erDiagram
         int id PK "autoincrement"
         string name "nullable"
         string email UK "nullable"
-        string phoneNumber UK "nullable"
         string googleId UK "nullable"
         string password "nullable (bcrypt hash)"
         string avatarUrl "nullable"
         boolean isEmailVerified "default: false"
-        boolean isPhoneVerified "default: false"
         AuthProvider_List authProviders "default: [LOCAL]"
         int defaultTriggerAfterDays "default: 365, nullable"
         boolean archived "default: false, nullable"
@@ -160,7 +155,6 @@ erDiagram
         string content "AES-256-GCM ciphertext with IV & AuthTag"
         string recipientName "nullable"
         string recipientEmail "nullable"
-        string recipientPhone "nullable"
         DeliveryChannel deliveryChannel "default: EMAIL"
         int triggerAfterDays "custom override threshold, nullable"
         datetime sentAt "nullable, timestamp of successful dispatch"
@@ -174,8 +168,8 @@ erDiagram
     DELIVERY_EVENT {
         int id PK "autoincrement"
         int messageId FK "references Message(id) ON DELETE CASCADE"
-        DeliveryChannel channel "EMAIL / WHATSAPP"
-        string recipient "target email or phone number"
+        DeliveryChannel channel "default: EMAIL"
+        string recipient "target email address"
         boolean success "delivery outcome boolean"
         string error "nullable, provider error string"
         datetime createdAt "default: now()"
@@ -185,8 +179,6 @@ erDiagram
         int id PK "autoincrement (singleton id=1)"
         int totalEmailsSent "default: 0"
         int totalEmailFailures "default: 0"
-        int totalWhatsAppSent "default: 0"
-        int totalWhatsAppFail "default: 0"
         datetime createdAt "default: now()"
         datetime updatedAt "updatedAt"
     }
@@ -207,8 +199,8 @@ erDiagram
 
 | Enum Name | Values | Context / Purpose |
 | :--- | :--- | :--- |
-| **`AuthProvider`** | `LOCAL`, `GOOGLE`, `WHATSAPP` | Allowed authentication mechanisms linked to user identity. |
-| **`DeliveryChannel`** | `EMAIL`, `WHATSAPP`, `BOTH` | Destination delivery channels configured for scheduled message dispatches. |
+| **`AuthProvider`** | `LOCAL`, `GOOGLE` | Allowed authentication mechanisms linked to user identity. |
+| **`DeliveryChannel`** | `EMAIL` | Destination delivery channel configured for scheduled message dispatches. |
 | **`MessageStatus`** | `PENDING`, `SENT`, `FAILED` | Vault message lifecycle status. Marked `FAILED` when `failedAttempts >= 3`. |
 | **`AuditLogActions`** | `LOGIN`, `MESSAGE_CREATED`, `MESSAGE_TRIGGERED` | User actions logged for system audit trails. |
 
@@ -227,7 +219,7 @@ sequenceDiagram
     participant Cron as Message Trigger Cron
     participant Worker as BullMQ Worker
     participant Crypto as AES-256-GCM Crypto Engine
-    participant Gateway as External Email / WhatsApp Gateways
+    participant Gateway as Email Gateway (Nodemailer)
 
     %% 1. Biometric Heartbeat Check-In
     Note over User, DB: Scenario A: User Biometric Heartbeat / Check-In
@@ -247,9 +239,9 @@ sequenceDiagram
 
     %% 3. Inactivity Evaluation & BullMQ Queueing
     Note over Cron, Gateway: Scenario C: Inactivity Threshold Reached & Automated Dispatch
-    loop Every 15 Minutes
+    loop Hourly (0 * * * * / Configurable)
         Cron->>Server: Trigger runMessageTriggerService()
-        Server->>DB: Query PENDING messages with failedAttempts < 3
+        Server->>DB: Query non-SENT messages with failedAttempts < 3
         DB-->>Server: Return candidate messages + User.lastLoginAt
         Server->>Server: Evaluate: (now - lastLoginAt) >= thresholdDays
         alt User Inactive beyond threshold
@@ -266,19 +258,13 @@ sequenceDiagram
     Worker->>Crypto: decryptMessage(content), decryptMessageNullable(title)
     Crypto-->>Worker: Plaintext subject and content
 
-    alt Channel: EMAIL or BOTH
-        Worker->>Gateway: Nodemailer dispatch (SMTP / Ethereal)
-        Gateway-->>Worker: Email result (success / failure)
-    end
-    alt Channel: WHATSAPP or BOTH
-        Worker->>Gateway: WhatsApp dispatch (Twilio / Meta API)
-        Gateway-->>Worker: WhatsApp result (success / failure)
-    end
+    Worker->>Gateway: Nodemailer dispatch (SMTP / Ethereal)
+    Gateway-->>Worker: Email result (success / failure)
 
-    Worker->>DB: INSERT INTO DeliveryEvent (messageId, channel, recipient, success, error)
-    Worker->>DB: UPSERT SystemMetric (increment counters)
+    Worker->>DB: INSERT INTO DeliveryEvent (messageId, EMAIL, recipient, success, error)
+    Worker->>DB: UPSERT SystemMetric (increment totalEmailsSent / totalEmailFailures)
 
-    alt All dispatches successful
+    alt Dispatch successful
         Worker->>DB: UPDATE Message SET status = SENT, sentAt = now()
         Worker-->>Redis: Mark BullMQ Job Completed
     else Dispatch failed
@@ -295,49 +281,61 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     subgraph Navigation["Expo Router Navigation (apps/mobile/app)"]
-        AuthStack["(auth)/login.tsx<br/>• Email / Password Form<br/>• Google OAuth Trigger<br/>• WhatsApp OTP Verification"]
-        TabsStack["(tabs)/_layout.tsx<br/>Tab Navigator (Deep Midnight Obsidian Theme)"]
-        DashboardTab["(tabs)/index.tsx (Dashboard)<br/>• Brand Header with Pulse Dot<br/>• Radial Countdown Visualizer<br/>• Heartbeat Life Pulse Button<br/>• Status & Urgency Card"]
-        MessagesTab["(tabs)/messages.tsx (Vault)<br/>• Urgency-Sorted Message List<br/>• VaultMessageCard with Action Buttons<br/>• Pull-to-refresh & Empty State"]
-        SettingsTab["(tabs)/settings.tsx (Settings)<br/>• Inactivity Threshold Preset Chips<br/>• Biometric Toggle Preference<br/>• AES-256 GCM Protection Badge<br/>• Sign Out Modal Dialog"]
-        MessageDetail["messages/[id].tsx (View Encrypted/Decrypted Message)"]
-        MessageCreate["messages/create.tsx (Compose Vault Message)"]
+        AuthStack["(auth)/login.tsx<br/>• Email / Password Form (Login & Register)<br/>• Google OAuth (expo-auth-session Web/Android/iOS)<br/>• Biometric Quick-Unlock"]
+        TabsStack["(tabs)/_layout.tsx<br/>Tab Navigator (Midnight Obsidian Vault Theme)"]
+        DashboardTab["(tabs)/index.tsx (Dashboard)<br/>• Brand Header with Pulse Dot<br/>• Radial Countdown Visualizer<br/>• Heartbeat Life Pulse Button<br/>• Next Dispatch Card & Vault Overview Strip<br/>• Inactivity Safety Net Timeline (14d / 7d / 24h)"]
+        MessagesTab["(tabs)/messages.tsx (Vault)<br/>• Search Bar & Segmented Filter (ALL / ARMED / DISPATCHED)<br/>• VaultMessageCard with Action Buttons<br/>• VaultGuideModal Trigger & Pull-to-refresh"]
+        SettingsTab["(tabs)/settings.tsx (Settings)<br/>• Inactivity Threshold Preset Chips (30–365d)<br/>• Biometric Toggle Preference<br/>• VaultGuideModal FAQ & AES-256-GCM Badge<br/>• Sign Out Modal Dialog"]
+        MessageDetail["messages/[id].tsx (View Decrypted Message & Delivery Events)"]
+        MessageCreate["messages/create.tsx (Compose & Live Dispatch Preview)"]
+        MessageEdit["messages/[id]/edit.tsx (Edit Pending Vault Message)"]
     end
 
     subgraph StateAndServices["Mobile Stores & Services"]
-        AuthStore["Zustand Auth Store (useAuthStore)<br/>• user, isAuthenticated, isLoading<br/>• performBackgroundCheckIn()<br/>• trySilentTokenRefresh()<br/>• checkIn(biometricVerified)"]
+        AuthStore["Zustand Auth Store (useAuthStore)<br/>• user, isAuthenticated, isLoading<br/>• performBackgroundCheckIn()<br/>• trySilentTokenRefresh()<br/>• loginWithGoogle(idToken)<br/>• checkIn(biometricVerified)"]
         ApiClient["HTTP Client (apiClient.ts)<br/>• X-Client-Platform header injection<br/>• 401 Interceptor with token queuing<br/>• Automatic silent refresh<br/>• onSessionExpired trigger"]
+        TokenStorage["Token Storage (tokenStorage.ts)<br/>• Secure / AsyncStorage Token Persistence"]
+        PushService["Push Service (pushNotificationService.ts)<br/>• Expo Push Token Registration"]
         BioService["Biometric Service (biometricService.ts)<br/>• getStatus() (Face ID / Touch ID check)<br/>• authenticate() with OS prompt<br/>• AsyncStorage preference toggle"]
-        MsgHook["useMessages Hook (TanStack Query)<br/>• fetchMessagesQuery()<br/>• createMessageMutation()<br/>• editMessageMutation()<br/>• deleteMessageMutation()"]
+        MsgHook["useMessages Hook (TanStack Query)<br/>• useMessages(), useMessage(id), useSwitchStatus()<br/>• useCreateMessage(), useUpdateMessage(), useDeleteMessage()"]
     end
 
     subgraph VisualComponents["Visual & Interactive Components"]
         PulseBtn["LifePulseButton.tsx<br/>• Animated Pulsing Rings<br/>• Haptic Feedback (Expo Haptics)<br/>• Dynamic Biometric / Heartbeat Label"]
-        RadialCount["RadialCountdown.tsx<br/>• react-native-svg Circle<br/>• Animated Stroke Dashoffset<br/>• Urgent / Safe Color Adaptation"]
+        RadialCount["RadialCountdown.tsx<br/>• react-native-svg 210x210 Progress Ring<br/>• Animated Stroke Dashoffset<br/>• Emerald-Cyan / Amber-Crimson Adaptation"]
         VaultCard["VaultMessageCard.tsx<br/>• AES-256 Encrypted Indicator<br/>• Urgency Badge & Days Remaining<br/>• Action Controls (View, Edit, Delete)"]
+        GuideModal["VaultGuideModal.tsx<br/>• Safety Net & Proof-of-Life FAQ Modal"]
         ModalComp["ConfirmModal.tsx<br/>• Accessible Dialog for Destructive Actions"]
         SecurityModal["SecurityAuthModal.tsx<br/>• Password Verification Dialog<br/>• Face ID / Biometric Retry<br/>• Disabling Security Gatekeeper"]
+        GoogleBtn["GoogleIcon.tsx<br/>• Custom Branded Google SVG Icon"]
     end
 
     %% Wiring
     DashboardTab --> PulseBtn
     DashboardTab --> RadialCount
     MessagesTab --> VaultCard
+    MessagesTab --> GuideModal
     SettingsTab --> ModalComp
     SettingsTab --> SecurityModal
+    SettingsTab --> GuideModal
+    AuthStack --> GoogleBtn
 
     PulseBtn --> BioService
     PulseBtn --> AuthStore
     DashboardTab --> AuthStore
+    DashboardTab --> MsgHook
     MessagesTab --> MsgHook
     SettingsTab --> AuthStore
     SettingsTab --> BioService
 
     AuthStore --> ApiClient
+    AuthStore --> TokenStorage
+    AuthStore --> PushService
     MsgHook --> ApiClient
     AuthStack --> AuthStore
     MessageDetail --> MsgHook
     MessageCreate --> MsgHook
+    MessageEdit --> MsgHook
 ```
 
 ---
@@ -346,15 +344,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    StartCron([Push Reminder Cron Trigger]) --> FetchUsers["Query active users with registered DeviceTokens and pending Messages"]
+    StartCron(["Push Reminder Cron Trigger (0 0 * * *)"]) --> FetchUsers["Query active users with registered DeviceTokens"]
     FetchUsers --> LoopUsers{"For each user..."}
 
     LoopUsers --> CalcDays["Calculate daysPassed = (now - user.lastLoginAt) in days"]
-    CalcDays --> FindMin["minDaysRemaining = min(triggerThreshold - daysPassed) across user's pending messages"]
+    CalcDays --> FindMin["minDaysRemaining = min(triggerThreshold - daysPassed) across pending messages"]
 
     FindMin --> CheckCondition{"Evaluate condition"}
 
-    CheckCondition -->|"0 <= minDaysRemaining <= 7"| ImminentAlert["Create INACTIVITY_WARNING Notification<br/>'You have messages scheduled to be sent in X days'"]
+    CheckCondition -->|"pendingMessages > 0 AND 0 <= minDaysRemaining <= 7"| ImminentAlert["Create INACTIVITY_WARNING Notification<br/>'You have N message(s) scheduled to be sent in X day(s)'"]
     CheckCondition -->|"daysPassed >= 5 AND daysSinceLastReminder >= 2"| HeartbeatAlert["Create HEARTBEAT_REMINDER Notification<br/>'You haven't checked in recently. Open Last Words to reset.'"]
     CheckCondition -->|"Neither condition met"| NextUser["Skip to next user"]
 
@@ -378,7 +376,7 @@ flowchart TD
 flowchart LR
     subgraph DockerCompose["Local Development: Docker Compose Topology"]
         subgraph PostgresContainer["last_words_db_container"]
-            PGPort["Port 5432"]
+            PGPort["Host Port 5433 -> Container 5432"]
             PGData[("postgres_data volume")]
             PGHealth["Healthcheck: pg_isready"]
         end
@@ -391,11 +389,11 @@ flowchart LR
 
         subgraph ApiContainer["last_words_api_container"]
             ApiPort["Port 3000"]
-            ApiProcess["Express API Server<br/>(pnpm dev:server / src/server.ts)"]
+            ApiProcess["Express API Server<br/>(pnpm --filter server run dev:server)<br/>REDIS_URL: redis://redis:6379"]
         end
 
         subgraph WorkerContainer["last_words_worker_container"]
-            WorkerProcess["Dedicated Background Worker<br/>(pnpm dev:worker / src/worker.ts)<br/>• BullMQ Delivery Worker<br/>• Message Trigger & Push Crons"]
+            WorkerProcess["Dedicated Background Worker<br/>(pnpm --filter server run dev:worker)<br/>• BullMQ Email Delivery Worker<br/>• Message Trigger & Push Crons"]
         end
 
         ApiContainer -->|depends_on healthy| PostgresContainer
@@ -447,33 +445,33 @@ sequenceDiagram
     box rgba(16, 185, 129, 0.1) Dedicated Worker Process (src/worker.ts)
     participant Worker as BullMQ Worker
     participant Cron as Inactivity Cron Scheduler
-    participant Gateway as External Gateways (SMTP / WhatsApp)
+    participant Gateway as Email Gateway (SMTP / Ethereal)
     end
 
     %% Scenario 1: Client action triggers background work
-    Note over Mobile, Gateway: Scenario A: Immediate Enqueue via API Endpoint (e.g. Manual /jobs/trigger-message)
+    Note over Mobile, Gateway: Scenario A: Immediate Enqueue via API Endpoint (e.g. POST /jobs/trigger-message or /messages/test)
     Mobile->>API: POST /jobs/trigger-message
     API->>QueueProducer: messageDeliveryQueue.add("send-message", { messageId: 42 })
     QueueProducer->>Redis: LPUSH / XADD into bull:message-delivery (Job JSON Payload)
     API-->>Mobile: 200 OK { message: "Job enqueued successfully" }
-    Note over API: API request finishes in milliseconds without waiting for email/WhatsApp!
+    Note over API: API request finishes in milliseconds without waiting for SMTP delivery!
 
     %% Scenario 2: Worker picks up job from Redis
     Redis->>Worker: BRPOPLPUSH / Stream notification: New job available
     Worker->>Redis: Lock job & update state to "active"
-    Worker->>DB: Fetch Message (42) ciphertext & recipient
-    Worker->>Gateway: Send Email / WhatsApp payload
-    Gateway-->>Worker: HTTP 200 / SMTP Accepted
+    Worker->>DB: Fetch Message (42) ciphertext & recipientEmail
+    Worker->>Gateway: Send Email payload via Nodemailer
+    Gateway-->>Worker: SMTP Accepted
     Worker->>DB: UPDATE Message SET status = 'SENT', sentAt = now()
-    Worker->>DB: INSERT INTO DeliveryEvent (messageId, success, channel)
+    Worker->>DB: INSERT INTO DeliveryEvent (messageId, success, channel: EMAIL)
     Worker->>Redis: Mark job "completed" (or retry with exponential backoff on error)
 
     %% Scenario 3: Scheduled Cron Inactivity Evaluation
-    Note over Mobile, Gateway: Scenario B: Scheduled Daily Inactivity Evaluation (Worker-Internal Cron)
-    loop Daily at Midnight (or Configured Cron)
-        Cron->>DB: Query users where (now() - lastLoginAt) >= thresholdDays
-        DB-->>Cron: Return 15 overdue messages
-        Cron->>Redis: BullMQ addBulk([job-1, job-2, ... job-15])
+    Note over Mobile, Gateway: Scenario B: Scheduled Hourly Inactivity Evaluation (Worker-Internal Cron)
+    loop Hourly (0 * * * * / Configurable)
+        Cron->>DB: Query messages where (now() - lastLoginAt) >= thresholdDays
+        DB-->>Cron: Return overdue messages
+        Cron->>Redis: BullMQ addBulk([job-1, job-2, ...])
         Redis->>Worker: Distribute jobs across worker concurrency threads
     end
 
