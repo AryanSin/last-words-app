@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { useResponsive } from "../../hooks/useResponsive";
 import { useTheme } from "../../hooks/use-theme-color";
 import { useDeleteMessage, useMessage } from "../../hooks/useMessages";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -20,6 +21,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 export default function MessageDetailScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide } = useResponsive();
   const user = useAuthStore((s) => s.user);
   const { id } = useLocalSearchParams<{ id: string }>();
   const messageId = id ? parseInt(id, 10) : undefined;
@@ -84,7 +86,9 @@ export default function MessageDetailScreen() {
 
   return (
     <SafeAreaView edges={["bottom", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}
+      >
         {/* Header with Title & Status */}
         <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.titleRow}>
@@ -167,45 +171,16 @@ export default function MessageDetailScreen() {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Delivery Channel</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Delivery Route</Text>
             <View
               style={[
                 styles.channelBadge,
-                {
-                  backgroundColor:
-                    message.deliveryChannel === "WHATSAPP"
-                      ? colors.whatsappSurface
-                      : colors.primarySurface,
-                },
+                { backgroundColor: colors.primarySurface },
               ]}
             >
-              <Ionicons
-                name={
-                  message.deliveryChannel === "WHATSAPP"
-                    ? "logo-whatsapp"
-                    : message.deliveryChannel === "BOTH"
-                      ? "paper-plane"
-                      : "mail"
-                }
-                size={14}
-                color={
-                  message.deliveryChannel === "WHATSAPP"
-                    ? colors.whatsapp
-                    : colors.primary
-                }
-              />
-              <Text
-                style={[
-                  styles.channelBadgeText,
-                  {
-                    color:
-                      message.deliveryChannel === "WHATSAPP"
-                        ? colors.whatsapp
-                        : colors.primary,
-                  },
-                ]}
-              >
-                {message.deliveryChannel}
+              <Ionicons name="mail" size={14} color={colors.primary} />
+              <Text style={[styles.channelBadgeText, { color: colors.primary }]}>
+                VERIFIED EMAIL
               </Text>
             </View>
           </View>
@@ -226,7 +201,7 @@ export default function MessageDetailScreen() {
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
               <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Recipient WhatsApp</Text>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Recipient Phone</Text>
                 <Text style={[styles.infoValue, { color: colors.text }]} selectable>
                   {message.recipientPhone}
                 </Text>
@@ -299,7 +274,7 @@ export default function MessageDetailScreen() {
                   <Text style={[styles.envelopeLabel, { color: colors.textMuted }]}>To:</Text>
                   <Text style={[styles.envelopeValue, { color: colors.text }]}>
                     {message.recipientName || "Designated Recipient"}{" "}
-                    {message.recipientEmail ? `<${message.recipientEmail}>` : message.recipientPhone || ""}
+                    &lt;{message.recipientEmail || "recipient@example.com"}&gt;
                   </Text>
                 </View>
                 <View style={styles.envelopeRow}>
@@ -394,11 +369,11 @@ export default function MessageDetailScreen() {
                 <View style={styles.eventHeader}>
                   <View style={styles.eventChannel}>
                     <Ionicons
-                      name={evt.channel === "WHATSAPP" ? "logo-whatsapp" : "mail"}
+                      name="mail"
                       size={14}
-                      color={colors.textMuted}
+                      color={colors.primary}
                     />
-                    <Text style={[styles.eventChannelText, { color: colors.text }]}>{evt.channel}</Text>
+                    <Text style={[styles.eventChannelText, { color: colors.text }]}>EMAIL</Text>
                     <Text style={[styles.eventRecipient, { color: colors.textMuted }]}>({evt.recipient})</Text>
                   </View>
                   <View
@@ -506,6 +481,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
+  },
+  scrollContentWide: {
+    maxWidth: 820,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 28,
   },
   headerCard: {
     borderRadius: 16,

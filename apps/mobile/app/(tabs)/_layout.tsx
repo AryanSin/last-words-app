@@ -24,6 +24,7 @@ export default function TabLayout() {
           justifyContent: "center",
           alignItems: "center",
           paddingVertical: 4,
+          maxWidth: 180,
         },
         tabBarStyle: {
           backgroundColor: colors.tabBarBackground,
@@ -32,6 +33,22 @@ export default function TabLayout() {
           height: Platform.OS === "web" ? 64 : Platform.OS === "ios" ? 84 : 64,
           paddingBottom: Platform.OS === "ios" ? 24 : 8,
           paddingTop: 8,
+          ...Platform.select({
+            web: {
+              maxWidth: 540,
+              width: "100%",
+              marginLeft: "auto" as any,
+              marginRight: "auto" as any,
+              marginBottom: 16,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.borderHighlight,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 16,
+            },
+          }),
         },
         headerStyle: {
           backgroundColor: colors.headerBackground,

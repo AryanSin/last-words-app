@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LifePulseButton } from "../../components/LifePulseButton";
 import { RadialCountdown } from "../../components/RadialCountdown";
+import { useResponsive } from "../../hooks/useResponsive";
 import { useTheme } from "../../hooks/use-theme-color";
 import { useMessages, useSwitchStatus } from "../../hooks/useMessages";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -22,6 +23,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 export default function DashboardScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide } = useResponsive();
 
   // Zustand Auth State
   const user = useAuthStore((s) => s.user);
@@ -33,13 +35,18 @@ export default function DashboardScreen() {
   // TanStack Query for dynamic switch status
   const {
     data: switchStatus,
+    isLoading: isSwitchLoading,
     refetch: refetchSwitchStatus,
     isRefetching: isSwitchRefetching,
   } = useSwitchStatus();
 
   // TanStack Query for messages & stats
-  const { data: messagesData, refetch: refetchMessages, isRefetching: isMessagesRefetching } =
-    useMessages(1, 50);
+  const {
+    data: messagesData,
+    isLoading: isMessagesLoading,
+    refetch: refetchMessages,
+    isRefetching: isMessagesRefetching,
+  } = useMessages(1, 50);
 
   const [checkingIn, setCheckingIn] = useState(false);
   const [heartbeatToast, setHeartbeatToast] = useState("");
@@ -82,11 +89,16 @@ export default function DashboardScreen() {
     }
   };
 
-  if (isLoading || !user) {
+  const isInitialLoading = isLoading || !user || isSwitchLoading || isMessagesLoading;
+
+  if (isInitialLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+          Loading Vault Status...
+        </Text>
+      </SafeAreaView>
     );
   }
 
@@ -120,7 +132,10 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.scrollContentWide,
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -191,261 +206,255 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        {/* Hero Chamber: Unboxed, Breatheable Focal Instrument */}
-        <View style={styles.heroChamber}>
-          {/* Spacious Radial Countdown Gauge */}
-          <RadialCountdown
-            daysRemaining={daysRemaining}
-            totalThreshold={triggerDays}
-            isUrgent={isUrgent}
-          />
-
-          {/* Primary Biometric Life-Pulse Action Button */}
-          <LifePulseButton
-            onCheckIn={handleCheckIn}
-            isLoading={checkingIn}
-            style={{ width: "100%", marginTop: 8, marginBottom: 10 }}
-          />
-
-          {/* Heartbeat Timestamp & Trigger Meta */}
+        {/* Responsive Grid: 2-Column on Desktop/Tablet, Vertical Stack on Mobile */}
+        <View style={isWide ? styles.desktopGrid : undefined}>
+          {/* Left Column on Desktop / Hero Chamber */}
           <View
             style={[
-              styles.heartbeatMetaRow,
-              {
-                backgroundColor: isDark
-                  ? "rgba(16, 185, 129, 0.06)"
-                  : "rgba(5, 150, 105, 0.06)",
-                borderColor: isDark
-                  ? "rgba(16, 185, 129, 0.18)"
-                  : "rgba(5, 150, 105, 0.15)",
-              },
+              isWide && [
+                styles.desktopLeftCol,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: isDark ? "rgba(56, 189, 248, 0.16)" : colors.border,
+                },
+              ],
             ]}
           >
-            <Ionicons name="shield-checkmark" size={13} color={colors.pulseEmerald} />
-            <Text style={[styles.heartbeatMetaText, { color: colors.textMuted }]}>
-              Verified {lastLogin.toLocaleDateString()} at{" "}
-              {lastLogin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              {" • "}
-              {triggerDays}d threshold
-            </Text>
-          </View>
-        </View>
+            <View style={styles.heroChamber}>
+              {/* Spacious Radial Countdown Gauge */}
+              <RadialCountdown
+                daysRemaining={daysRemaining}
+                totalThreshold={triggerDays}
+                isUrgent={isUrgent}
+                isLoading={isSwitchLoading || isSwitchRefetching}
+              />
 
-        {/* Next Scheduled Dispatch (Conditional) */}
-        {soonestMessage && (
-          <TouchableOpacity
-            style={[
-              styles.dispatchCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: soonestMessage.daysRemaining <= 7 ? colors.warning : colors.border,
-              },
-            ]}
-            onPress={() => router.push(`/messages/${soonestMessage.id}`)}
-            activeOpacity={0.7}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`Next dispatch: ${soonestMessage.title || "Untitled Message"}`}
-            accessibilityHint="Tap to view message details"
-          >
-            <View style={styles.dispatchLeft}>
+              {/* Primary Biometric Life-Pulse Action Button */}
+              <LifePulseButton
+                onCheckIn={handleCheckIn}
+                isLoading={checkingIn}
+                style={{ width: "100%", maxWidth: 360, marginTop: 8, marginBottom: 10 }}
+              />
+
+              {/* Heartbeat Timestamp & Trigger Meta */}
               <View
                 style={[
-                  styles.dispatchIconBox,
+                  styles.heartbeatMetaRow,
                   {
-                    backgroundColor:
-                      soonestMessage.deliveryChannel === "WHATSAPP"
-                        ? colors.whatsappSurface
-                        : colors.primarySurface,
-                    borderColor:
-                      soonestMessage.deliveryChannel === "WHATSAPP"
-                        ? colors.whatsappBorder
-                        : colors.primaryBorder,
+                    backgroundColor: isDark
+                      ? "rgba(16, 185, 129, 0.06)"
+                      : "rgba(5, 150, 105, 0.06)",
+                    borderColor: isDark
+                      ? "rgba(16, 185, 129, 0.18)"
+                      : "rgba(5, 150, 105, 0.15)",
                   },
                 ]}
               >
-                <Ionicons
-                  name={
-                    soonestMessage.deliveryChannel === "WHATSAPP"
-                      ? "logo-whatsapp"
-                      : "mail-outline"
-                  }
-                  size={18}
-                  color={
-                    soonestMessage.deliveryChannel === "WHATSAPP"
-                      ? colors.whatsapp
-                      : colors.primary
-                  }
-                />
+                <Ionicons name="shield-checkmark" size={13} color={colors.pulseEmerald} />
+                <Text style={[styles.heartbeatMetaText, { color: colors.textMuted }]}>
+                  Verified {lastLogin.toLocaleDateString()} at{" "}
+                  {lastLogin.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {" • "}
+                  {triggerDays}d threshold
+                </Text>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <View style={styles.dispatchTitleRow}>
-                  <Text style={[styles.dispatchTitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-                    Next Dispatch: "{soonestMessage.title || "Untitled Message"}"
-                  </Text>
+            </View>
+          </View>
+
+          {/* Right Column on Desktop / Follow-up Operations Feed */}
+          <View style={isWide ? styles.desktopRightCol : undefined}>
+            {/* Next Scheduled Dispatch (Conditional) */}
+            {soonestMessage && (
+              <TouchableOpacity
+                style={[
+                  styles.dispatchCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: soonestMessage.daysRemaining <= 7 ? colors.warning : colors.border,
+                  },
+                ]}
+                onPress={() => router.push(`/messages/${soonestMessage.id}`)}
+                activeOpacity={0.7}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Next dispatch: ${soonestMessage.title || "Untitled Message"}`}
+                accessibilityHint="Tap to view message details"
+              >
+                <View style={styles.dispatchLeft}>
                   <View
                     style={[
-                      styles.channelMicroBadge,
+                      styles.dispatchIconBox,
                       {
-                        backgroundColor:
-                          soonestMessage.deliveryChannel === "WHATSAPP"
-                            ? colors.whatsappSurface
-                            : colors.primarySurface,
-                        borderColor:
-                          soonestMessage.deliveryChannel === "WHATSAPP"
-                            ? colors.whatsappBorder
-                            : colors.primaryBorder,
+                        backgroundColor: colors.primarySurface,
+                        borderColor: colors.primaryBorder,
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.channelMicroBadgeText,
-                        {
-                          color:
-                            soonestMessage.deliveryChannel === "WHATSAPP"
-                              ? colors.whatsapp
-                              : colors.primary,
-                        },
-                      ]}
-                    >
-                      {soonestMessage.deliveryChannel}
+                    <Ionicons
+                      name="mail-outline"
+                      size={18}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.dispatchTitleRow}>
+                      <Text style={[styles.dispatchTitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                        Next Dispatch: "{soonestMessage.title || "Untitled Message"}"
+                      </Text>
+                      <View
+                        style={[
+                          styles.channelMicroBadge,
+                          {
+                            backgroundColor: colors.primarySurface,
+                            borderColor: colors.primaryBorder,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.channelMicroBadgeText,
+                            { color: colors.primary },
+                          ]}
+                        >
+                          EMAIL
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.dispatchSub, { color: colors.textMuted }]} numberOfLines={1}>
+                      Custom {soonestMessage.triggerAfterDays || triggerDays}d trigger • To{" "}
+                      {soonestMessage.recipientName || "Designated Recipient"}
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.dispatchSub, { color: colors.textMuted }]} numberOfLines={1}>
-                  Custom {soonestMessage.triggerAfterDays || triggerDays}d trigger • To{" "}
-                  {soonestMessage.recipientName || "Designated Recipient"}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
 
-        {/* Vault Overview Strip */}
-        <TouchableOpacity
-          style={[
-            styles.vaultBar,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-          onPress={() => router.push("/(tabs)/messages")}
-          activeOpacity={0.7}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Open message vault"
-        >
-          <View style={styles.vaultBarLeft}>
-            <View
+            {/* Vault Overview Strip */}
+            <TouchableOpacity
               style={[
-                styles.vaultBarIcon,
-                { backgroundColor: colors.primarySurface },
+                styles.vaultBar,
+                { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
+              onPress={() => router.push("/(tabs)/messages")}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Open message vault"
             >
-              <Ionicons name="mail-unread-outline" size={20} color={colors.primary} />
-            </View>
-            <View>
-              <Text style={[styles.vaultBarTitle, { color: colors.text }]}>
-                {totalMessages} {totalMessages === 1 ? "Message" : "Messages"} Sealed in Vault
+              <View style={styles.vaultBarLeft}>
+                <View
+                  style={[
+                    styles.vaultBarIcon,
+                    { backgroundColor: colors.primarySurface },
+                  ]}
+                >
+                  <Ionicons name="mail-unread-outline" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={[styles.vaultBarTitle, { color: colors.text }]}>
+                    {totalMessages} {totalMessages === 1 ? "Message" : "Messages"} Sealed in Vault
+                  </Text>
+                  <Text style={[styles.vaultBarSub, { color: colors.textMuted }]}>
+                    {pendingMessages} armed for delivery • Encrypted at rest
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.vaultBarAction}>
+                <Text style={[styles.vaultBarActionText, { color: colors.primary }]}>View</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Inactivity Safety Net: Clean Vertical Timeline */}
+            <View style={[styles.timelineSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.timelineHeaderRow}>
+                <Ionicons name="shield-outline" size={18} color={colors.primary} />
+                <Text style={[styles.timelineSectionTitle, { color: colors.text }]}>
+                  Inactivity Safety Net
+                </Text>
+              </View>
+              <Text style={[styles.timelineSectionDesc, { color: colors.textMuted }]}>
+                How Last Words prevents accidental dispatches while you travel, fall ill, or rest:
               </Text>
-              <Text style={[styles.vaultBarSub, { color: colors.textMuted }]}>
-                {pendingMessages} armed for delivery • Encrypted at rest
-              </Text>
-            </View>
-          </View>
-          <View style={styles.vaultBarAction}>
-            <Text style={[styles.vaultBarActionText, { color: colors.primary }]}>View</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
-          </View>
-        </TouchableOpacity>
 
-        {/* Inactivity Safety Net: Clean Vertical Timeline */}
-        <View style={[styles.timelineSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.timelineHeaderRow}>
-            <Ionicons name="shield-outline" size={18} color={colors.primary} />
-            <Text style={[styles.timelineSectionTitle, { color: colors.text }]}>
-              Inactivity Safety Net
-            </Text>
-          </View>
-          <Text style={[styles.timelineSectionDesc, { color: colors.textMuted }]}>
-            How Last Words prevents accidental dispatches while you travel, fall ill, or rest:
-          </Text>
+              <View style={styles.timelineList}>
+                {/* Step 1 */}
+                <View style={styles.timelineStep}>
+                  <View style={styles.timelineIndicatorColumn}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        { backgroundColor: colors.primarySurface, borderColor: colors.primary },
+                      ]}
+                    >
+                      <View style={[styles.timelineInnerDot, { backgroundColor: colors.primary }]} />
+                    </View>
+                    <View style={[styles.timelineConnectingLine, { backgroundColor: colors.border }]} />
+                  </View>
+                  <View style={styles.timelineStepBody}>
+                    <View style={styles.stepTitleRow}>
+                      <Text style={[styles.stepTitle, { color: colors.text }]}>
+                        Advance Reminder
+                      </Text>
+                      <Text style={[styles.stepBadgeText, { color: colors.primary }]}>14 DAYS PRIOR</Text>
+                    </View>
+                    <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
+                      Gentle push notification to tap your life pulse and refresh your timer.
+                    </Text>
+                  </View>
+                </View>
 
-          <View style={styles.timelineList}>
-            {/* Step 1 */}
-            <View style={styles.timelineStep}>
-              <View style={styles.timelineIndicatorColumn}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    { backgroundColor: colors.primarySurface, borderColor: colors.primary },
-                  ]}
-                >
-                  <View style={[styles.timelineInnerDot, { backgroundColor: colors.primary }]} />
+                {/* Step 2 */}
+                <View style={styles.timelineStep}>
+                  <View style={styles.timelineIndicatorColumn}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        { backgroundColor: colors.warningSurface, borderColor: colors.warning },
+                      ]}
+                    >
+                      <View style={[styles.timelineInnerDot, { backgroundColor: colors.warning }]} />
+                    </View>
+                    <View style={[styles.timelineConnectingLine, { backgroundColor: colors.border }]} />
+                  </View>
+                  <View style={styles.timelineStepBody}>
+                    <View style={styles.stepTitleRow}>
+                      <Text style={[styles.stepTitle, { color: colors.warning }]}>
+                        Urgent Warning
+                      </Text>
+                      <Text style={[styles.stepBadgeText, { color: colors.warning }]}>7 DAYS PRIOR</Text>
+                    </View>
+                    <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
+                      High-priority push alert and email sent directly to your registered account.
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.timelineConnectingLine, { backgroundColor: colors.border }]} />
-              </View>
-              <View style={styles.timelineStepBody}>
-                <View style={styles.stepTitleRow}>
-                  <Text style={[styles.stepTitle, { color: colors.text }]}>
-                    Advance Reminder
-                  </Text>
-                  <Text style={[styles.stepBadgeText, { color: colors.primary }]}>14 DAYS PRIOR</Text>
-                </View>
-                <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
-                  Gentle push notification to tap your life pulse and refresh your timer.
-                </Text>
-              </View>
-            </View>
 
-            {/* Step 2 */}
-            <View style={styles.timelineStep}>
-              <View style={styles.timelineIndicatorColumn}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    { backgroundColor: colors.warningSurface, borderColor: colors.warning },
-                  ]}
-                >
-                  <View style={[styles.timelineInnerDot, { backgroundColor: colors.warning }]} />
+                {/* Step 3 */}
+                <View style={[styles.timelineStep, { marginBottom: 0 }]}>
+                  <View style={styles.timelineIndicatorColumn}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        { backgroundColor: colors.dangerSurface, borderColor: colors.danger },
+                      ]}
+                    >
+                      <View style={[styles.timelineInnerDot, { backgroundColor: colors.danger }]} />
+                    </View>
+                  </View>
+                  <View style={styles.timelineStepBody}>
+                    <View style={styles.stepTitleRow}>
+                      <Text style={[styles.stepTitle, { color: colors.danger }]}>
+                        Final Grace Period
+                      </Text>
+                      <Text style={[styles.stepBadgeText, { color: colors.danger }]}>24 HOURS PRIOR</Text>
+                    </View>
+                    <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
+                      Critical emergency notices. Tapping your life pulse cancels dispatch immediately.
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.timelineConnectingLine, { backgroundColor: colors.border }]} />
-              </View>
-              <View style={styles.timelineStepBody}>
-                <View style={styles.stepTitleRow}>
-                  <Text style={[styles.stepTitle, { color: colors.warning }]}>
-                    Urgent Warning
-                  </Text>
-                  <Text style={[styles.stepBadgeText, { color: colors.warning }]}>7 DAYS PRIOR</Text>
-                </View>
-                <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
-                  High-priority push alert and email sent directly to your registered account.
-                </Text>
-              </View>
-            </View>
-
-            {/* Step 3 */}
-            <View style={[styles.timelineStep, { marginBottom: 0 }]}>
-              <View style={styles.timelineIndicatorColumn}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    { backgroundColor: colors.dangerSurface, borderColor: colors.danger },
-                  ]}
-                >
-                  <View style={[styles.timelineInnerDot, { backgroundColor: colors.danger }]} />
-                </View>
-              </View>
-              <View style={styles.timelineStepBody}>
-                <View style={styles.stepTitleRow}>
-                  <Text style={[styles.stepTitle, { color: colors.danger }]}>
-                    Final Grace Period
-                  </Text>
-                  <Text style={[styles.stepBadgeText, { color: colors.danger }]}>24 HOURS PRIOR</Text>
-                </View>
-                <Text style={[styles.stepDesc, { color: colors.textMuted }]}>
-                  Critical emergency notices. Tapping your life pulse cancels dispatch immediately.
-                </Text>
               </View>
             </View>
           </View>
@@ -464,9 +473,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  loadingText: {
+    marginTop: 14,
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
   scrollContent: {
     padding: 20,
     paddingBottom: 48,
+  },
+  scrollContentWide: {
+    maxWidth: 1040,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 96,
+  },
+  desktopGrid: {
+    flexDirection: "row",
+    gap: 28,
+    alignItems: "flex-start",
+    marginTop: 8,
+  },
+  desktopLeftCol: {
+    width: 380,
+    flexShrink: 0,
+    borderRadius: 22,
+    borderWidth: 1.2,
+    padding: 18,
+    paddingTop: 8,
+  },
+  desktopRightCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
   brandHeader: {
     flexDirection: "row",

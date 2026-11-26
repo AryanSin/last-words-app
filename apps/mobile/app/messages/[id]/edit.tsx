@@ -15,14 +15,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useResponsive } from "../../../hooks/useResponsive";
 import { useTheme } from "../../../hooks/use-theme-color";
 import { useMessage, useUpdateMessage } from "../../../hooks/useMessages";
 import { useAuthStore } from "../../../store/useAuthStore";
 
-type Channel = "EMAIL" | "WHATSAPP" | "BOTH";
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+[1-9]\d{6,14}$/;
 const MAX_TITLE_LENGTH = 120;
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_NAME_LENGTH = 100;
@@ -31,13 +29,13 @@ const PRESET_DELAYS = [30, 60, 90, 180, 365];
 interface FieldErrors {
   content?: string;
   recipientEmail?: string;
-  recipientPhone?: string;
   triggerDays?: string;
 }
 
 export default function EditMessageScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide } = useResponsive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const messageId = id ? parseInt(id, 10) : undefined;
   const user = useAuthStore((s) => s.user);
@@ -49,8 +47,6 @@ export default function EditMessageScreen() {
   const [content, setContent] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [recipientPhone, setRecipientPhone] = useState("");
-  const [deliveryChannel, setDeliveryChannel] = useState<Channel>("EMAIL");
   const [triggerDays, setTriggerDays] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -58,15 +54,12 @@ export default function EditMessageScreen() {
   const [touched, setTouched] = useState<{
     content?: boolean;
     recipientEmail?: boolean;
-    recipientPhone?: boolean;
     triggerDays?: boolean;
   }>({});
 
   const validateFields = (
     currentContent: string,
     currentEmail: string,
-    currentPhone: string,
-    currentChannel: Channel,
     currentDays: string,
   ): FieldErrors => {
     const errs: FieldErrors = {};
@@ -75,20 +68,10 @@ export default function EditMessageScreen() {
       errs.content = "Message content is required.";
     }
 
-    if (currentChannel === "EMAIL" || currentChannel === "BOTH") {
-      if (!currentEmail.trim()) {
-        errs.recipientEmail = "Recipient email address is required.";
-      } else if (!EMAIL_REGEX.test(currentEmail.trim())) {
-        errs.recipientEmail = "Enter a valid email address (e.g. name@domain.com).";
-      }
-    }
-
-    if (currentChannel === "WHATSAPP" || currentChannel === "BOTH") {
-      if (!currentPhone.trim()) {
-        errs.recipientPhone = "Recipient phone is required for WhatsApp delivery.";
-      } else if (!PHONE_REGEX.test(currentPhone.trim())) {
-        errs.recipientPhone = "Enter phone in E.164 format (e.g. +14155552671).";
-      }
+    if (!currentEmail.trim()) {
+      errs.recipientEmail = "Recipient email address is required.";
+    } else if (!EMAIL_REGEX.test(currentEmail.trim())) {
+      errs.recipientEmail = "Enter a valid email address (e.g. name@domain.com).";
     }
 
     if (currentDays.trim()) {
@@ -106,12 +89,10 @@ export default function EditMessageScreen() {
   const fieldErrors = validateFields(
     content,
     recipientEmail,
-    recipientPhone,
-    deliveryChannel,
     triggerDays,
   );
 
-  const handleBlur = (field: "content" | "recipientEmail" | "recipientPhone" | "triggerDays") => {
+  const handleBlur = (field: "content" | "recipientEmail" | "triggerDays") => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
@@ -130,8 +111,6 @@ export default function EditMessageScreen() {
       setContent(message.content || "");
       setRecipientName(message.recipientName || "");
       setRecipientEmail(message.recipientEmail || "");
-      setRecipientPhone(message.recipientPhone || "");
-      setDeliveryChannel(message.deliveryChannel || "EMAIL");
       setTriggerDays(
         message.triggerAfterDays !== null && message.triggerAfterDays !== undefined
           ? message.triggerAfterDays.toString()
@@ -145,15 +124,12 @@ export default function EditMessageScreen() {
     setTouched({
       content: true,
       recipientEmail: true,
-      recipientPhone: true,
       triggerDays: true,
     });
 
     const errors = validateFields(
       content,
       recipientEmail,
-      recipientPhone,
-      deliveryChannel,
       triggerDays,
     );
     if (Object.keys(errors).length > 0) {
@@ -172,15 +148,8 @@ export default function EditMessageScreen() {
         title: title.trim() || undefined,
         content: content.trim(),
         recipientName: recipientName.trim() || undefined,
-        recipientEmail:
-          deliveryChannel === "EMAIL" || deliveryChannel === "BOTH"
-            ? recipientEmail.trim().toLowerCase()
-            : undefined,
-        recipientPhone:
-          deliveryChannel === "WHATSAPP" || deliveryChannel === "BOTH"
-            ? recipientPhone.trim()
-            : undefined,
-        deliveryChannel,
+        recipientEmail: recipientEmail.trim().toLowerCase(),
+        deliveryChannel: "EMAIL" as const,
         triggerAfterDays: triggerDays.trim() ? parseInt(triggerDays.trim(), 10) : undefined,
       };
 
@@ -252,7 +221,10 @@ export default function EditMessageScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Security Chamber Banner */}
           <View
             style={[
@@ -390,170 +362,7 @@ export default function EditMessageScreen() {
             </View>
           </View>
 
-          {/* Section 2: Delivery Channels */}
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="paper-plane-outline" size={18} color={colors.primary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Delivery Route</Text>
-            </View>
-            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-              Choose how Last Words will autonomously dispatch this message:
-            </Text>
-
-            <View style={styles.channelGrid}>
-              {/* Email Channel */}
-              <TouchableOpacity
-                style={[
-                  styles.channelOption,
-                  {
-                    backgroundColor:
-                      deliveryChannel === "EMAIL"
-                        ? colors.primarySurface
-                        : colors.surfaceRaised,
-                    borderColor:
-                      deliveryChannel === "EMAIL"
-                        ? colors.primary
-                        : colors.border,
-                  },
-                ]}
-                onPress={() => setDeliveryChannel("EMAIL")}
-                activeOpacity={0.8}
-                accessible={true}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: deliveryChannel === "EMAIL" }}
-                accessibilityLabel="Deliver via Email"
-              >
-                <View style={styles.channelOptionHeader}>
-                  <Ionicons
-                    name="mail"
-                    size={20}
-                    color={deliveryChannel === "EMAIL" ? colors.primary : colors.textMuted}
-                  />
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      {
-                        borderColor:
-                          deliveryChannel === "EMAIL"
-                            ? colors.primary
-                            : colors.border,
-                      },
-                    ]}
-                  >
-                    {deliveryChannel === "EMAIL" && (
-                      <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />
-                    )}
-                  </View>
-                </View>
-                <Text style={[styles.channelOptionTitle, { color: colors.text }]}>Email</Text>
-                <Text style={[styles.channelOptionDesc, { color: colors.textMuted }]}>
-                  Verified TLS-encrypted direct email dispatch
-                </Text>
-              </TouchableOpacity>
-
-              {/* WhatsApp Channel */}
-              <TouchableOpacity
-                style={[
-                  styles.channelOption,
-                  {
-                    backgroundColor:
-                      deliveryChannel === "WHATSAPP"
-                        ? colors.whatsappSurface
-                        : colors.surfaceRaised,
-                    borderColor:
-                      deliveryChannel === "WHATSAPP"
-                        ? colors.whatsapp
-                        : colors.border,
-                  },
-                ]}
-                onPress={() => setDeliveryChannel("WHATSAPP")}
-                activeOpacity={0.8}
-                accessible={true}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: deliveryChannel === "WHATSAPP" }}
-                accessibilityLabel="Deliver via WhatsApp"
-              >
-                <View style={styles.channelOptionHeader}>
-                  <Ionicons
-                    name="logo-whatsapp"
-                    size={20}
-                    color={deliveryChannel === "WHATSAPP" ? colors.whatsapp : colors.textMuted}
-                  />
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      {
-                        borderColor:
-                          deliveryChannel === "WHATSAPP"
-                            ? colors.whatsapp
-                            : colors.border,
-                      },
-                    ]}
-                  >
-                    {deliveryChannel === "WHATSAPP" && (
-                      <View style={[styles.radioDot, { backgroundColor: colors.whatsapp }]} />
-                    )}
-                  </View>
-                </View>
-                <Text style={[styles.channelOptionTitle, { color: colors.text }]}>WhatsApp</Text>
-                <Text style={[styles.channelOptionDesc, { color: colors.textMuted }]}>
-                  Instant direct message via Meta Cloud API
-                </Text>
-              </TouchableOpacity>
-
-              {/* Dual Channel */}
-              <TouchableOpacity
-                style={[
-                  styles.channelOption,
-                  {
-                    backgroundColor:
-                      deliveryChannel === "BOTH"
-                        ? "rgba(129, 140, 248, 0.12)"
-                        : colors.surfaceRaised,
-                    borderColor:
-                      deliveryChannel === "BOTH"
-                        ? "#818CF8"
-                        : colors.border,
-                  },
-                ]}
-                onPress={() => setDeliveryChannel("BOTH")}
-                activeOpacity={0.8}
-                accessible={true}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: deliveryChannel === "BOTH" }}
-                accessibilityLabel="Deliver via Both Email and WhatsApp"
-              >
-                <View style={styles.channelOptionHeader}>
-                  <Ionicons
-                    name="paper-plane"
-                    size={20}
-                    color={deliveryChannel === "BOTH" ? "#818CF8" : colors.textMuted}
-                  />
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      {
-                        borderColor:
-                          deliveryChannel === "BOTH"
-                            ? "#818CF8"
-                            : colors.border,
-                      },
-                    ]}
-                  >
-                    {deliveryChannel === "BOTH" && (
-                      <View style={[styles.radioDot, { backgroundColor: "#818CF8" }]} />
-                    )}
-                  </View>
-                </View>
-                <Text style={[styles.channelOptionTitle, { color: colors.text }]}>Dual Resilience</Text>
-                <Text style={[styles.channelOptionDesc, { color: colors.textMuted }]}>
-                  Simultaneous dispatch via both channels
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Section 3: Recipient Destination */}
+          {/* Section 2: Designated Recipient */}
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.sectionHeader}>
               <Ionicons name="person-outline" size={18} color={colors.primary} />
@@ -585,96 +394,47 @@ export default function EditMessageScreen() {
               />
             </View>
 
-            {/* Recipient Email (if EMAIL or BOTH) */}
-            {(deliveryChannel === "EMAIL" || deliveryChannel === "BOTH") && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>
-                  Recipient Email Address (Required)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.inputBackground,
-                      borderColor:
-                        touched.recipientEmail && fieldErrors.recipientEmail
-                          ? colors.danger
-                          : colors.border,
-                      color: colors.text,
-                    },
-                  ]}
-                  placeholder="alice@example.com"
-                  placeholderTextColor={colors.textSubtle}
-                  value={recipientEmail}
-                  onChangeText={(text) => {
-                    setRecipientEmail(text);
-                    if (errorMessage) setErrorMessage("");
-                  }}
-                  onBlur={() => handleBlur("recipientEmail")}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="next"
-                  accessibilityLabel="Recipient Email"
-                  aria-invalid={!!(touched.recipientEmail && fieldErrors.recipientEmail)}
-                />
-                {touched.recipientEmail && fieldErrors.recipientEmail ? (
-                  <View style={styles.inlineErrorRow} accessibilityRole="alert">
-                    <Ionicons name="alert-circle" size={14} color={colors.danger} />
-                    <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
-                      {fieldErrors.recipientEmail}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-
-            {/* Recipient Phone (if WHATSAPP or BOTH) */}
-            {(deliveryChannel === "WHATSAPP" || deliveryChannel === "BOTH") && (
-              <View style={[styles.inputGroup, { marginBottom: 0 }]}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>
-                  Recipient WhatsApp Number (E.164 Required)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.inputBackground,
-                      borderColor:
-                        touched.recipientPhone && fieldErrors.recipientPhone
-                          ? colors.danger
-                          : colors.border,
-                      color: colors.text,
-                    },
-                  ]}
-                  placeholder="+14155552671"
-                  placeholderTextColor={colors.textSubtle}
-                  value={recipientPhone}
-                  onChangeText={(text) => {
-                    setRecipientPhone(text);
-                    if (errorMessage) setErrorMessage("");
-                  }}
-                  onBlur={() => handleBlur("recipientPhone")}
-                  keyboardType="phone-pad"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="next"
-                  accessibilityLabel="Recipient WhatsApp Phone"
-                  aria-invalid={!!(touched.recipientPhone && fieldErrors.recipientPhone)}
-                />
-                {touched.recipientPhone && fieldErrors.recipientPhone ? (
-                  <View style={styles.inlineErrorRow} accessibilityRole="alert">
-                    <Ionicons name="alert-circle" size={14} color={colors.danger} />
-                    <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
-                      {fieldErrors.recipientPhone}
-                    </Text>
-                  </View>
-                ) : null}
-                <Text style={[styles.fieldHelper, { color: colors.textSubtle }]}>
-                  Include country code with leading + (e.g. +1 for US/Canada, +44 for UK).
-                </Text>
-              </View>
-            )}
+            {/* Recipient Email */}
+            <View style={[styles.inputGroup, { marginBottom: 0 }]}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>
+                Recipient Email Address (Required)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor:
+                      touched.recipientEmail && fieldErrors.recipientEmail
+                        ? colors.danger
+                        : colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder="alice@example.com"
+                placeholderTextColor={colors.textSubtle}
+                value={recipientEmail}
+                onChangeText={(text) => {
+                  setRecipientEmail(text);
+                  if (errorMessage) setErrorMessage("");
+                }}
+                onBlur={() => handleBlur("recipientEmail")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="next"
+                accessibilityLabel="Recipient Email"
+                aria-invalid={!!(touched.recipientEmail && fieldErrors.recipientEmail)}
+              />
+              {touched.recipientEmail && fieldErrors.recipientEmail ? (
+                <View style={styles.inlineErrorRow} accessibilityRole="alert">
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
+                    {fieldErrors.recipientEmail}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
           {/* Section 4: Custom Inactivity Delay */}
@@ -821,7 +581,7 @@ export default function EditMessageScreen() {
               </View>
               <View style={[styles.previewDivider, { backgroundColor: colors.border }]} />
               <Text style={[styles.previewField, { color: colors.textMuted }]}>
-                To: <Text style={{ color: colors.text, fontWeight: "600" }}>{recipientName || "Designated Recipient"} &lt;{recipientEmail || recipientPhone || "recipient-address"}&gt;</Text>
+                To: <Text style={{ color: colors.text, fontWeight: "600" }}>{recipientName || "Designated Recipient"} &lt;{recipientEmail || "recipient@example.com"}&gt;</Text>
               </Text>
               <Text style={[styles.previewField, { color: colors.textMuted }]}>
                 Subject: <Text style={{ color: colors.text, fontWeight: "700" }}>{title || "Confidential Dispatch from Last Words"}</Text>
@@ -917,6 +677,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 48,
+  },
+  scrollContentWide: {
+    maxWidth: 760,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 28,
   },
   securityBanner: {
     flexDirection: "row",
@@ -1023,42 +789,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 6,
     lineHeight: 15,
-  },
-  channelGrid: {
-    gap: 10,
-  },
-  channelOption: {
-    borderWidth: 1.2,
-    borderRadius: 14,
-    padding: 14,
-  },
-  channelOptionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  channelOptionTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  channelOptionDesc: {
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
   },
   presetRow: {
     flexDirection: "row",

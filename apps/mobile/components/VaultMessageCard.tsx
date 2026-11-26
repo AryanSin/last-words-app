@@ -121,7 +121,7 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
               {item.title || "Untitled Last Words Message"}
             </Text>
             <Text style={[styles.recipient, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
-              To: {item.recipientName || item.recipientEmail || item.recipientPhone || "Designated Recipient"}
+              To: {item.recipientName || item.recipientEmail || "Designated Recipient"}
             </Text>
           </View>
           {renderStatusBadge()}
@@ -147,37 +147,25 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
             style={[
               styles.channelChip,
               {
-                backgroundColor:
-                  item.deliveryChannel === "WHATSAPP"
-                    ? colors.whatsappSurface
-                    : colors.primarySurface,
-                borderColor:
-                  item.deliveryChannel === "WHATSAPP"
-                    ? colors.whatsappBorder
-                    : colors.primaryBorder,
+                backgroundColor: colors.primarySurface,
+                borderColor: colors.primaryBorder,
               },
             ]}
           >
             <Ionicons
-              name={
-                item.deliveryChannel === "WHATSAPP"
-                  ? "logo-whatsapp"
-                  : item.deliveryChannel === "BOTH"
-                    ? "paper-plane"
-                    : "mail"
-              }
+              name="mail"
               size={12}
-              color={item.deliveryChannel === "WHATSAPP" ? colors.whatsapp : colors.primary}
+              color={colors.primary}
             />
             <Text
               style={[
                 styles.channelChipText,
                 {
-                  color: item.deliveryChannel === "WHATSAPP" ? colors.whatsapp : colors.primary,
+                  color: colors.primary,
                 },
               ]}
             >
-              {item.deliveryChannel}
+              EMAIL
             </Text>
           </View>
 

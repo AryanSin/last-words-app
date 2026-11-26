@@ -52,7 +52,7 @@ const GUIDE_ITEMS: GuideItem[] = [
     iconName: "mail-unread-outline",
     question: "What will recipients receive upon dispatch?",
     answer:
-      "Recipients receive a dignified notice via Email or WhatsApp containing your message title, your authored instructions or farewell, and a cryptographic verification timestamp.",
+      "Recipients receive a dignified notice via Email containing your message title, your authored instructions or farewell, and a cryptographic verification timestamp.",
   },
 ];
 

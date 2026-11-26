@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { SecurityAuthModal } from "../../components/SecurityAuthModal";
 import { VaultGuideModal } from "../../components/VaultGuideModal";
+import { useResponsive } from "../../hooks/useResponsive";
 import { useTheme } from "../../hooks/use-theme-color";
 import { api } from "../../services/apiClient";
 import { biometricService, BiometricStatus } from "../../services/biometricService";
@@ -27,8 +28,10 @@ const PRESET_DAYS = [30, 60, 90, 180, 365];
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide } = useResponsive();
 
   const user = useAuthStore((s) => s.user);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const logout = useAuthStore((s) => s.logout);
   const updateUserTriggerDays = useAuthStore((s) => s.updateUserTriggerDays);
 
@@ -213,9 +216,22 @@ export default function SettingsScreen() {
     }
   };
 
+  if (isLoading || !user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.scrollContentWide,
+        ]}
+      >
         {/* Screen Header */}
         <View style={styles.headerContainer}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Settings & Security</Text>
@@ -587,9 +603,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  scrollContentWide: {
+    maxWidth: 800,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 110,
   },
   headerContainer: {
     marginBottom: 20,

@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { VaultGuideModal } from "../../components/VaultGuideModal";
 import { VaultMessageCard } from "../../components/VaultMessageCard";
+import { useResponsive } from "../../hooks/useResponsive";
 import { useTheme } from "../../hooks/use-theme-color";
 import { MessageItem, useDeleteMessage, useMessages } from "../../hooks/useMessages";
 
@@ -25,6 +26,7 @@ type FilterTab = "ALL" | "ARMED" | "DISPATCHED";
 export default function MessagesScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide, width } = useResponsive();
 
   // TanStack Query: Fetch messages (auto-cached and synchronized)
   const { data, isLoading, isRefetching, refetch } = useMessages(1, 50);
@@ -252,7 +254,10 @@ export default function MessagesScreen() {
               isDeleting={deleteMutation.isPending && deleteTargetId === item.id}
             />
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            isWide && styles.listContentWide,
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -335,7 +340,14 @@ export default function MessagesScreen() {
 
       {/* Floating Action Button */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+        style={[
+          styles.fab,
+          { backgroundColor: colors.primary, shadowColor: colors.primary },
+          isWide && {
+            right: Math.max(24, (width - 820) / 2 + 16),
+            bottom: 32,
+          },
+        ]}
         onPress={() => router.push("/messages/create")}
         activeOpacity={0.85}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -385,6 +397,14 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 90,
+  },
+  listContentWide: {
+    maxWidth: 820,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 110,
   },
   headerContainer: {
     marginBottom: 16,

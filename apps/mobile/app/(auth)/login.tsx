@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GoogleIcon } from "../../components/GoogleIcon";
+import { useResponsive } from "../../hooks/useResponsive";
 import { useTheme } from "../../hooks/use-theme-color";
 import { biometricService } from "../../services/biometricService";
 import { tokenStorage } from "../../services/tokenStorage";
@@ -29,6 +30,7 @@ type AuthMode = "login" | "register";
 export default function LoginScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { isWide } = useResponsive();
 
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
@@ -255,7 +257,10 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header */}
           <View style={styles.header}>
             <View
@@ -482,6 +487,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 24,
+  },
+  scrollContentWide: {
+    maxWidth: 440,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 48,
   },
   header: {
     alignItems: "center",

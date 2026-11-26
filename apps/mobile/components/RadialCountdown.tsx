@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Defs, G, LinearGradient, RadialGradient, Stop } from "react-native-svg";
 import { useTheme } from "../hooks/use-theme-color";
 
@@ -7,12 +7,14 @@ interface RadialCountdownProps {
   daysRemaining: number;
   totalThreshold: number;
   isUrgent?: boolean;
+  isLoading?: boolean;
 }
 
 export const RadialCountdown: React.FC<RadialCountdownProps> = ({
   daysRemaining,
   totalThreshold,
   isUrgent = false,
+  isLoading = false,
 }) => {
   const { colors, isDark } = useTheme();
 
@@ -134,42 +136,53 @@ export const RadialCountdown: React.FC<RadialCountdownProps> = ({
 
         {/* Center Content */}
         <View style={styles.innerLabelContainer}>
-          <Text
-            style={[
-              styles.daysNumber,
-              { color: effectiveUrgent ? colors.warning : colors.text },
-            ]}
-            numberOfLines={1}
-          >
-            {daysRemaining}
-          </Text>
-          <Text style={[styles.daysLabel, { color: colors.textMuted }]}>
-            DAYS REMAINING
-          </Text>
-          <View
-            style={[
-              styles.statusPill,
-              {
-                backgroundColor: statusBg,
-                borderColor: statusColor,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.statusPillDot,
-                { backgroundColor: statusColor },
-              ]}
-            />
-            <Text
-              style={[
-                styles.statusPillText,
-                { color: statusColor },
-              ]}
-            >
-              {statusLabel}
-            </Text>
-          </View>
+          {isLoading ? (
+            <>
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginBottom: 6 }} />
+              <Text style={[styles.daysLabel, { color: colors.textMuted }]}>
+                SYNCING VAULT...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text
+                style={[
+                  styles.daysNumber,
+                  { color: effectiveUrgent ? colors.warning : colors.text },
+                ]}
+                numberOfLines={1}
+              >
+                {daysRemaining}
+              </Text>
+              <Text style={[styles.daysLabel, { color: colors.textMuted }]}>
+                DAYS REMAINING
+              </Text>
+              <View
+                style={[
+                  styles.statusPill,
+                  {
+                    backgroundColor: statusBg,
+                    borderColor: statusColor,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statusPillDot,
+                    { backgroundColor: statusColor },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusPillText,
+                    { color: statusColor },
+                  ]}
+                >
+                  {statusLabel}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </View>
