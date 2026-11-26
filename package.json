@@ -5,9 +5,14 @@
   "scripts": {
     "dev:server": "pnpm --filter server dev:server",
     "dev:worker": "pnpm --filter server dev:worker",
+    "dev:combined": "pnpm --filter server dev:combined",
     "dev:mobile": "pnpm --filter mobile start",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "build": "pnpm --filter server build",
+    "build:mobile:web": "pnpm --filter mobile build:web",
+    "start:server": "pnpm --filter server start",
+    "start:worker": "pnpm --filter server start:worker",
+    "start:combined": "pnpm --filter server start:combined",
     "test": "pnpm --filter server test",
     "lint": "pnpm -r run lint"
   },

@@ -9,7 +9,7 @@ const messageTriggerService_1 = require("../services/messageTriggerService");
 const loggers_1 = require("../utils/loggers");
 let isRunning = false;
 // Default: Runs daily at midnight (0 0 * * *)
-exports.MESSAGE_TRIGGER_CRON = process.env.MESSAGE_TRIGGER_CRON || "0 0 * * *";
+exports.MESSAGE_TRIGGER_CRON = process.env.MESSAGE_TRIGGER_CRON || "0 * * * *";
 const messageTriggerJob = node_cron_1.default.schedule(exports.MESSAGE_TRIGGER_CRON, async () => {
     if (isRunning)
         return;
