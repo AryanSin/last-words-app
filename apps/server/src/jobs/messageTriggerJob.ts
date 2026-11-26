@@ -5,7 +5,7 @@ import { logger } from "../utils/loggers";
 let isRunning = false;
 
 // Default: Runs daily at midnight (0 0 * * *)
-export const MESSAGE_TRIGGER_CRON = process.env.MESSAGE_TRIGGER_CRON || "0 0 * * *";
+export const MESSAGE_TRIGGER_CRON = process.env.MESSAGE_TRIGGER_CRON || "0 * * * *";
 
 const messageTriggerJob = cron.schedule(
   MESSAGE_TRIGGER_CRON,

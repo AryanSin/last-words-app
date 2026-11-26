@@ -5,20 +5,22 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { useTheme } from "../../hooks/use-theme-color";
 import { useDeleteMessage, useMessage } from "../../hooks/useMessages";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export default function MessageDetailScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const user = useAuthStore((s) => s.user);
   const { id } = useLocalSearchParams<{ id: string }>();
   const messageId = id ? parseInt(id, 10) : undefined;
 
@@ -26,6 +28,7 @@ export default function MessageDetailScreen() {
   const deleteMutation = useDeleteMessage();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRecipientPreview, setShowRecipientPreview] = useState(false);
 
   const isEditable = message && message.status !== "SENT";
 
@@ -64,6 +67,10 @@ export default function MessageDetailScreen() {
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => router.back()}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Return to Messages"
+            activeOpacity={0.7}
           >
             <Text style={[styles.backButtonText, { color: colors.text }]}>Return to Messages</Text>
           </TouchableOpacity>
@@ -76,16 +83,10 @@ export default function MessageDetailScreen() {
   const sentDate = message.sentAt ? new Date(message.sentAt) : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={["bottom", "left", "right"]} style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header with Title & Status */}
         <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cryptoBadgeRow}>
-            <Ionicons name="lock-closed" size={13} color={colors.primary} />
-            <Text style={[styles.cryptoBadgeText, { color: colors.primary }]}>
-              AES-256 GCM ENCRYPTED
-            </Text>
-          </View>
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: colors.text }]}>{message.title || "Untitled Last Words Message"}</Text>
             {message.status === "SENT" ? (
@@ -137,7 +138,13 @@ export default function MessageDetailScreen() {
 
         {/* Full Message Content Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.cardSectionTitle, { color: colors.textMuted }]}>Message Content</Text>
+          <View style={styles.contentHeaderRow}>
+            <Text style={[styles.cardSectionTitle, { color: colors.textMuted }]}>Message Content</Text>
+            <View style={[styles.sealedBadge, { backgroundColor: colors.primarySurface }]}>
+              <Ionicons name="lock-closed" size={11} color={colors.primary} />
+              <Text style={[styles.sealedBadgeText, { color: colors.primary }]}>Encrypted at Rest</Text>
+            </View>
+          </View>
           <View style={[styles.contentBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[styles.contentText, { color: colors.text }]} selectable>
               {message.content}
@@ -148,6 +155,9 @@ export default function MessageDetailScreen() {
         {/* Recipient & Channel Info */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardSectionTitle, { color: colors.textMuted }]}>Recipient & Delivery Channels</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
+            Confidential until triggered. Recipients have not been contacted.
+          </Text>
 
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Recipient Name</Text>
@@ -158,7 +168,17 @@ export default function MessageDetailScreen() {
 
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Delivery Channel</Text>
-            <View style={[styles.channelBadge, { backgroundColor: colors.primarySurface }]}>
+            <View
+              style={[
+                styles.channelBadge,
+                {
+                  backgroundColor:
+                    message.deliveryChannel === "WHATSAPP"
+                      ? colors.whatsappSurface
+                      : colors.primarySurface,
+                },
+              ]}
+            >
               <Ionicons
                 name={
                   message.deliveryChannel === "WHATSAPP"
@@ -168,9 +188,25 @@ export default function MessageDetailScreen() {
                       : "mail"
                 }
                 size={14}
-                color={colors.primary}
+                color={
+                  message.deliveryChannel === "WHATSAPP"
+                    ? colors.whatsapp
+                    : colors.primary
+                }
               />
-              <Text style={[styles.channelBadgeText, { color: colors.primary }]}>{message.deliveryChannel}</Text>
+              <Text
+                style={[
+                  styles.channelBadgeText,
+                  {
+                    color:
+                      message.deliveryChannel === "WHATSAPP"
+                        ? colors.whatsapp
+                        : colors.primary,
+                  },
+                ]}
+              >
+                {message.deliveryChannel}
+              </Text>
             </View>
           </View>
 
@@ -199,6 +235,118 @@ export default function MessageDetailScreen() {
           ) : null}
         </View>
 
+        {/* Recipient Dispatch Preview Simulation */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.previewToggleHeader}
+            onPress={() => setShowRecipientPreview((prev) => !prev)}
+            activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Toggle Recipient Dispatch Preview"
+            accessibilityState={{ expanded: showRecipientPreview }}
+          >
+            <View style={styles.previewToggleLeft}>
+              <View
+                style={[
+                  styles.previewIconBox,
+                  { backgroundColor: colors.primarySurface },
+                ]}
+              >
+                <Ionicons
+                  name={showRecipientPreview ? "eye-outline" : "eye-off-outline"}
+                  size={18}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.previewSectionTitle, { color: colors.text }]}>
+                  Recipient Delivery Preview
+                </Text>
+                <Text style={[styles.previewSectionSubtitle, { color: colors.textMuted }]}>
+                  {showRecipientPreview
+                    ? "Simulating how this message appears when dispatched"
+                    : "Tap to preview what your recipient will receive"}
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name={showRecipientPreview ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textMuted}
+            />
+          </TouchableOpacity>
+
+          {showRecipientPreview && (
+            <View
+              style={[
+                styles.envelopeContainer,
+                {
+                  backgroundColor: isDark ? "#090D16" : "#F8FAFC",
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {/* Envelope Header */}
+              <View style={[styles.envelopeHeader, { borderBottomColor: colors.borderSubtle }]}>
+                <View style={styles.envelopeRow}>
+                  <Text style={[styles.envelopeLabel, { color: colors.textMuted }]}>From:</Text>
+                  <Text style={[styles.envelopeValue, { color: colors.text }]}>
+                    Last Words Automated Dispatch Service
+                  </Text>
+                </View>
+                <View style={styles.envelopeRow}>
+                  <Text style={[styles.envelopeLabel, { color: colors.textMuted }]}>To:</Text>
+                  <Text style={[styles.envelopeValue, { color: colors.text }]}>
+                    {message.recipientName || "Designated Recipient"}{" "}
+                    {message.recipientEmail ? `<${message.recipientEmail}>` : message.recipientPhone || ""}
+                  </Text>
+                </View>
+                <View style={styles.envelopeRow}>
+                  <Text style={[styles.envelopeLabel, { color: colors.textMuted }]}>Subject:</Text>
+                  <Text style={[styles.envelopeValue, { color: colors.primary, fontWeight: "700" }]}>
+                    Confidential Notice: Last Words Dispatch from {user?.name || "Your Designated Contact"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Envelope Intro Notice */}
+              <View
+                style={[
+                  styles.envelopeNotice,
+                  {
+                    backgroundColor: colors.primarySurface,
+                    borderColor: colors.primaryBorder,
+                  },
+                ]}
+              >
+                <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                <Text style={[styles.envelopeNoticeText, { color: colors.textMuted }]}>
+                  This message was authored by {user?.name || "the sender"} and held in an encrypted vault. It was autonomously released following confirmed inactivity.
+                </Text>
+              </View>
+
+              {/* Envelope Body */}
+              <View style={styles.envelopeBody}>
+                <Text style={[styles.envelopeBodyTitle, { color: colors.text }]}>
+                  {message.title || "Untitled Message"}
+                </Text>
+                <Text style={[styles.envelopeBodyContent, { color: colors.text }]}>
+                  {message.content}
+                </Text>
+              </View>
+
+              {/* Envelope Footer */}
+              <View style={[styles.envelopeFooter, { borderTopColor: colors.borderSubtle }]}>
+                <Ionicons name="lock-closed" size={12} color={colors.textSubtle} />
+                <Text style={[styles.envelopeFooterText, { color: colors.textSubtle }]}>
+                  Delivered cryptographically via Last Words AES-256 GCM dead-man's switch.
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+
         {/* Inactivity Threshold & Timestamps */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardSectionTitle, { color: colors.textMuted }]}>Trigger & Timestamps</Text>
@@ -207,8 +355,8 @@ export default function MessageDetailScreen() {
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Inactivity Delay</Text>
             <Text style={[styles.infoValue, { color: colors.text }]}>
               {message.triggerAfterDays
-                ? `${message.triggerAfterDays} Days (Custom override)`
-                : "Account Default"}
+                ? `${message.triggerAfterDays} Days (Custom override for this message)`
+                : "Inheriting Account Default"}
             </Text>
           </View>
 
@@ -288,9 +436,14 @@ export default function MessageDetailScreen() {
               style={[styles.editButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push(`/messages/${message.id}/edit`)}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Edit Message"
             >
-              <Ionicons name="create-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.editButtonText}>Edit Message</Text>
+              <Ionicons name="create-outline" size={18} color={isDark ? "#080C14" : "#FFFFFF"} />
+              <Text style={[styles.editButtonText, { color: isDark ? "#080C14" : "#FFFFFF" }]}>
+                Edit Message
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -306,6 +459,10 @@ export default function MessageDetailScreen() {
             onPress={() => setShowDeleteModal(true)}
             disabled={deleteMutation.isPending}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Delete Message"
+            accessibilityState={{ disabled: deleteMutation.isPending, busy: deleteMutation.isPending }}
           >
             {deleteMutation.isPending ? (
               <ActivityIndicator color={colors.danger} size="small" />
@@ -356,16 +513,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 16,
   },
-  cryptoBadgeRow: {
+  contentHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sealedBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginBottom: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  cryptoBadgeText: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.6,
+  sealedBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   titleRow: {
     flexDirection: "row",
@@ -433,6 +598,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
     marginBottom: 12,
   },
   contentBox: {
@@ -526,12 +696,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 48,
     gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
   },
   editButtonText: {
-    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
   },
@@ -540,6 +710,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 48,
     gap: 8,
     borderWidth: 1,
     paddingVertical: 14,
@@ -569,5 +740,96 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  previewToggleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  previewToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    marginRight: 8,
+  },
+  previewIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  previewSectionSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  envelopeContainer: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 14,
+  },
+  envelopeHeader: {
+    borderBottomWidth: 1,
+    paddingBottom: 10,
+    marginBottom: 12,
+    gap: 6,
+  },
+  envelopeRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  envelopeLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    width: 55,
+  },
+  envelopeValue: {
+    fontSize: 12,
+    flex: 1,
+  },
+  envelopeNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  envelopeNoticeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    flex: 1,
+  },
+  envelopeBody: {
+    paddingVertical: 8,
+  },
+  envelopeBodyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  envelopeBodyContent: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  envelopeFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderTopWidth: 1,
+    paddingTop: 10,
+    marginTop: 14,
+  },
+  envelopeFooterText: {
+    fontSize: 11,
+    lineHeight: 14,
   },
 });

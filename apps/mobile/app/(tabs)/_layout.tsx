@@ -10,6 +10,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: colors.tabIconSelected,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarShowLabel: true,
@@ -47,8 +48,12 @@ export default function TabLayout() {
           title: "Dashboard",
           tabBarLabel: "Dashboard",
           headerTitle: "Last Words",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse-outline" size={size || 22} color={color as string} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "pulse" : "pulse-outline"}
+              size={size || 22}
+              color={color as string}
+            />
           ),
         }}
       />
@@ -58,8 +63,12 @@ export default function TabLayout() {
           title: "Messages",
           tabBarLabel: "Messages",
           headerTitle: "Last Words Messages",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="mail-outline" size={size || 22} color={color as string} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "mail" : "mail-outline"}
+              size={size || 22}
+              color={color as string}
+            />
           ),
         }}
       />
@@ -69,8 +78,12 @@ export default function TabLayout() {
           title: "Settings",
           tabBarLabel: "Settings",
           headerTitle: "Last Words Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size || 22} color={color as string} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={size || 22}
+              color={color as string}
+            />
           ),
         }}
       />

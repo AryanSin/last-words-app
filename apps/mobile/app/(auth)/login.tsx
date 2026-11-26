@@ -8,7 +8,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { GoogleIcon } from "../../components/GoogleIcon";
 import { useTheme } from "../../hooks/use-theme-color";
 import { biometricService } from "../../services/biometricService";
@@ -28,7 +28,7 @@ type AuthMode = "login" | "register";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
@@ -258,6 +258,14 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
+            <View
+              style={[
+                styles.brandLogoBox,
+                { backgroundColor: colors.primarySurface, borderColor: colors.primaryBorder },
+              ]}
+            >
+              <Text style={[styles.brandLogoText, { color: colors.primary }]}>LW</Text>
+            </View>
             <Text style={[styles.logoTitle, { color: colors.text }]}>LAST WORDS</Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
               Automated Inactivity Messaging & Switch
@@ -278,6 +286,11 @@ export default function LoginScreen() {
                   onPress={() => {
                     setMode(tab);
                   }}
+                  activeOpacity={0.8}
+                  accessible={true}
+                  accessibilityRole="tab"
+                  accessibilityLabel={tab === "login" ? "Log In" : "Sign Up"}
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <Text
                     style={[
@@ -310,6 +323,9 @@ export default function LoginScreen() {
                   placeholderTextColor={colors.textSubtle}
                   value={name}
                   onChangeText={setName}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  accessibilityLabel="Full Name"
                 />
               </View>
             )}
@@ -331,6 +347,9 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="next"
+                accessibilityLabel="Email Address"
               />
             </View>
 
@@ -350,6 +369,9 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                returnKeyType="go"
+                onSubmitEditing={handleEmailAuth}
+                accessibilityLabel="Password"
               />
             </View>
 
@@ -361,11 +383,21 @@ export default function LoginScreen() {
               ]}
               onPress={handleEmailAuth}
               disabled={loading || googleLoading}
+              activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={mode === "login" ? "Sign In to Last Words" : "Create Last Words Account"}
+              accessibilityState={{ disabled: loading || googleLoading, busy: loading }}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={isDark ? "#080C14" : "#FFFFFF"} />
               ) : (
-                <Text style={styles.primaryButtonText}>
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { color: isDark ? "#080C14" : "#FFFFFF" },
+                  ]}
+                >
                   {mode === "login" ? "Sign In to Last Words" : "Create Last Words Account"}
                 </Text>
               )}
@@ -391,6 +423,10 @@ export default function LoginScreen() {
               onPress={handleGoogleAuthPress}
               disabled={googleLoading || loading}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={mode === "login" ? "Sign In with Google" : "Sign Up with Google"}
+              accessibilityState={{ disabled: googleLoading || loading, busy: googleLoading }}
             >
               {googleLoading ? (
                 <ActivityIndicator color={colors.text} size="small" />
@@ -416,6 +452,9 @@ export default function LoginScreen() {
               ]}
               onPress={handleBiometricUnlock}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Unlock with ${biometricType}`}
             >
               <Ionicons
                 name={
@@ -448,6 +487,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
+  brandLogoBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  brandLogoText: {
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
   logoTitle: {
     fontSize: 32,
     fontWeight: "800",
@@ -466,6 +519,8 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: "center",
     paddingVertical: 10,
     alignItems: "center",
     borderRadius: 8,
@@ -495,8 +550,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   primaryButton: {
-    paddingVertical: 14,
-    borderRadius: 10,
+    minHeight: 52,
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 8,
   },
@@ -528,9 +585,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 52,
     gap: 10,
-    paddingVertical: 13,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
   },
   googleButtonText: {
@@ -541,6 +599,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 52,
     gap: 8,
     borderWidth: 1.5,
     borderRadius: 14,

@@ -80,6 +80,7 @@ export function SecurityAuthModal({
       animationType="fade"
       onRequestClose={handleClose}
       statusBarTranslucent
+      accessibilityViewIsModal={true}
     >
       <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable
@@ -154,6 +155,10 @@ export function SecurityAuthModal({
               style={styles.eyeIcon}
               onPress={() => setShowPassword((prev) => !prev)}
               activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
             >
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -179,6 +184,9 @@ export function SecurityAuthModal({
               }}
               disabled={isVerifying}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Try ${biometricType} again`}
             >
               <Ionicons
                 name={biometricType === "Face ID" ? "scan-outline" : "finger-print-outline"}
@@ -205,6 +213,9 @@ export function SecurityAuthModal({
               onPress={handleClose}
               disabled={isVerifying}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
             >
               <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
@@ -220,6 +231,10 @@ export function SecurityAuthModal({
               onPress={handleVerify}
               disabled={isVerifying}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Verify and Disable"
+              accessibilityState={{ disabled: isVerifying, busy: isVerifying }}
             >
               {isVerifying ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
@@ -314,8 +329,12 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     position: "absolute",
-    right: 14,
-    top: 14,
+    right: 4,
+    top: 4,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
   retryBiometricBtn: {
     flexDirection: "row",
@@ -324,6 +343,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1.2,
     borderRadius: 12,
+    minHeight: 44,
     paddingVertical: 10,
     paddingHorizontal: 16,
     width: "100%",
@@ -341,6 +361,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    minHeight: 48,
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: "center",

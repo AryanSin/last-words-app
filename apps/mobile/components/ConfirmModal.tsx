@@ -51,6 +51,7 @@ export function ConfirmModal({
       animationType="fade"
       onRequestClose={onCancel}
       statusBarTranslucent
+      accessibilityViewIsModal={true}
     >
       <Pressable style={styles.overlay} onPress={onCancel}>
         <Pressable
@@ -96,6 +97,9 @@ export function ConfirmModal({
               onPress={onCancel}
               disabled={isLoading}
               activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={cancelText}
             >
               <Text style={[styles.cancelButtonText, { color: colors.text }]}>
                 {cancelText}
@@ -113,6 +117,10 @@ export function ConfirmModal({
               onPress={onConfirm}
               disabled={isLoading}
               activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={confirmText}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
             >
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
@@ -182,6 +190,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    minHeight: 48,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",

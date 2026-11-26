@@ -38,6 +38,17 @@ export const Colors = {
     dangerSurface: "rgba(220, 38, 38, 0.08)",
     dangerBorder: "#FECACA",
 
+    whatsapp: "#25D366",
+    whatsappSurface: "rgba(37, 211, 102, 0.1)",
+    whatsappBorder: "#86EFAC",
+
+    arcGradientSafeStart: "#059669",
+    arcGradientSafeEnd: "#0284C7",
+    arcGradientUrgentStart: "#D97706",
+    arcGradientUrgentEnd: "#DC2626",
+    ambientGlowSafe: "rgba(5, 150, 105, 0.06)",
+    ambientGlowUrgent: "rgba(217, 119, 6, 0.08)",
+
     icon: "#64748B",
     tabIconDefault: "#94A3B8",
     tabIconSelected: "#0284C7",
@@ -83,6 +94,17 @@ export const Colors = {
     danger: "#EF4444",
     dangerSurface: "rgba(239, 68, 68, 0.15)",
     dangerBorder: "#7F1D1D",
+
+    whatsapp: "#25D366",
+    whatsappSurface: "rgba(37, 211, 102, 0.14)",
+    whatsappBorder: "#065F46",
+
+    arcGradientSafeStart: "#10B981", // Living Heartbeat Emerald
+    arcGradientSafeEnd: "#38BDF8",   // Radiant Sky Cyan
+    arcGradientUrgentStart: "#F59E0B", // Amber Warning
+    arcGradientUrgentEnd: "#EF4444",   // Final Crimson
+    ambientGlowSafe: "rgba(16, 185, 129, 0.08)",
+    ambientGlowUrgent: "rgba(245, 158, 11, 0.12)",
 
     icon: "#94A3B8",
     tabIconDefault: "#64748B",

@@ -6,6 +6,7 @@ import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 import { useColorScheme } from "../hooks/use-color-scheme";
 import { useAuthStore } from "../store/useAuthStore";
@@ -75,43 +76,45 @@ export default function RootLayout() {
   }, [initAuth, performBackgroundCheckIn, trySilentTokenRefresh]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="messages/create"
-            options={{
-              presentation: "modal",
-              headerShown: true,
-              title: "New Message",
-              headerStyle: { backgroundColor: colors.headerBackground },
-              headerTintColor: colors.headerText,
-            }}
-          />
-          <Stack.Screen
-            name="messages/[id]"
-            options={{
-              headerShown: true,
-              title: "Message Details",
-              headerStyle: { backgroundColor: colors.headerBackground },
-              headerTintColor: colors.headerText,
-            }}
-          />
-          <Stack.Screen
-            name="messages/[id]/edit"
-            options={{
-              presentation: "modal",
-              headerShown: true,
-              title: "Edit Message",
-              headerStyle: { backgroundColor: colors.headerBackground },
-              headerTintColor: colors.headerText,
-            }}
-          />
-        </Stack>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="messages/create"
+              options={{
+                presentation: "modal",
+                headerShown: true,
+                title: "New Message",
+                headerStyle: { backgroundColor: colors.headerBackground },
+                headerTintColor: colors.headerText,
+              }}
+            />
+            <Stack.Screen
+              name="messages/[id]"
+              options={{
+                headerShown: true,
+                title: "Message Details",
+                headerStyle: { backgroundColor: colors.headerBackground },
+                headerTintColor: colors.headerText,
+              }}
+            />
+            <Stack.Screen
+              name="messages/[id]/edit"
+              options={{
+                presentation: "modal",
+                headerShown: true,
+                title: "Edit Message",
+                headerStyle: { backgroundColor: colors.headerBackground },
+                headerTintColor: colors.headerText,
+              }}
+            />
+          </Stack>
+          <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

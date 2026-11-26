@@ -5,10 +5,12 @@ import {
   ActivityIndicator,
   Animated,
   Platform,
+  StyleProp,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import { useTheme } from "../hooks/use-theme-color";
 import { biometricService, BiometricStatus } from "../services/biometricService";
@@ -16,11 +18,13 @@ import { biometricService, BiometricStatus } from "../services/biometricService"
 interface LifePulseButtonProps {
   onCheckIn: (biometricVerified: boolean) => Promise<void>;
   isLoading?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const LifePulseButton: React.FC<LifePulseButtonProps> = ({
   onCheckIn,
   isLoading = false,
+  style,
 }) => {
   const { colors, isDark } = useTheme();
   const [biometricInfo, setBiometricInfo] = useState<BiometricStatus | null>(null);
@@ -98,10 +102,16 @@ export const LifePulseButton: React.FC<LifePulseButtonProps> = ({
           shadowColor: colors.pulseEmerald,
         },
         isLoading && styles.disabled,
+        style,
       ]}
       onPress={handlePress}
       disabled={isLoading}
       activeOpacity={0.85}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel="Confirm Life Pulse"
+      accessibilityHint={biometricLabel}
+      accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
       {/* Icon with animated subtle pulse ring */}
       <View style={styles.iconContainer}>
@@ -148,7 +158,11 @@ export const LifePulseButton: React.FC<LifePulseButtonProps> = ({
       <View
         style={[
           styles.actionArrow,
-          { backgroundColor: colors.pulseEmeraldSurface },
+          {
+            backgroundColor: colors.pulseEmeraldSurface,
+            borderColor: isDark ? "rgba(16, 185, 129, 0.35)" : "rgba(5, 150, 105, 0.3)",
+            borderWidth: 1,
+          },
         ]}
       >
         <Ionicons name="checkmark" size={18} color={colors.pulseEmerald} />
@@ -161,6 +175,7 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 64,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 20,

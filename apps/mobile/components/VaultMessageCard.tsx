@@ -24,6 +24,13 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
   const isEditable = item.status !== "SENT";
   const isUrgent = (item.daysRemaining ?? 999) <= 7 && item.status === "PENDING";
 
+  const getCardBorderColor = () => {
+    if (item.status === "FAILED") return colors.dangerBorder;
+    if (item.status === "SENT") return colors.successBorder;
+    if (isUrgent) return colors.warning;
+    return colors.border;
+  };
+
   const renderStatusBadge = () => {
     switch (item.status) {
       case "SENT":
@@ -95,24 +102,25 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: isUrgent ? colors.warning : colors.border,
+          borderColor: getCardBorderColor(),
         },
       ]}
     >
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title || "Untitled message"} to ${item.recipientName || item.recipientEmail || "Designated Recipient"}, status ${item.status === "SENT" ? "delivered" : item.status === "FAILED" ? "delivery failed" : `${item.daysRemaining !== undefined ? `${item.daysRemaining} days remaining` : "armed"}`}`}
+        accessibilityHint="Tap to view message details"
+      >
         {/* Header: Title and Status Badge */}
         <View style={styles.cardHeader}>
           <View style={styles.titleWrapper}>
-            <View style={styles.lockRow}>
-              <Ionicons name="lock-closed" size={13} color={colors.primary} />
-              <Text style={[styles.securityTag, { color: colors.primary }]}>
-                AES-256 GCM
-              </Text>
-            </View>
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
               {item.title || "Untitled Last Words Message"}
             </Text>
-            <Text style={[styles.recipient, { color: colors.textMuted }]}>
+            <Text style={[styles.recipient, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
               To: {item.recipientName || item.recipientEmail || item.recipientPhone || "Designated Recipient"}
             </Text>
           </View>
@@ -126,7 +134,7 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
             { backgroundColor: isDark ? "#090D16" : "#F8FAFC", borderColor: colors.borderSubtle },
           ]}
         >
-          <Text style={[styles.previewText, { color: colors.textMuted }]} numberOfLines={2}>
+          <Text style={[styles.previewText, { color: colors.textMuted }]} numberOfLines={2} ellipsizeMode="tail">
             {item.content}
           </Text>
         </View>
@@ -141,8 +149,12 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
               {
                 backgroundColor:
                   item.deliveryChannel === "WHATSAPP"
-                    ? "rgba(16, 185, 129, 0.12)"
+                    ? colors.whatsappSurface
                     : colors.primarySurface,
+                borderColor:
+                  item.deliveryChannel === "WHATSAPP"
+                    ? colors.whatsappBorder
+                    : colors.primaryBorder,
               },
             ]}
           >
@@ -155,13 +167,13 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
                     : "mail"
               }
               size={12}
-              color={item.deliveryChannel === "WHATSAPP" ? "#10B981" : colors.primary}
+              color={item.deliveryChannel === "WHATSAPP" ? colors.whatsapp : colors.primary}
             />
             <Text
               style={[
                 styles.channelChipText,
                 {
-                  color: item.deliveryChannel === "WHATSAPP" ? "#10B981" : colors.primary,
+                  color: item.deliveryChannel === "WHATSAPP" ? colors.whatsapp : colors.primary,
                 },
               ]}
             >
@@ -180,6 +192,11 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
               onPress={onEdit}
               style={[styles.actionBtn, { backgroundColor: colors.primarySurface }]}
               activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Edit message"
+              accessibilityHint="Opens editor for this message"
             >
               <Ionicons name="create-outline" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -190,6 +207,12 @@ export const VaultMessageCard: React.FC<VaultMessageCardProps> = ({
             style={[styles.actionBtn, { backgroundColor: colors.dangerSurface }]}
             disabled={isDeleting}
             activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Delete message"
+            accessibilityHint="Permanently deletes this message"
+            accessibilityState={{ disabled: isDeleting, busy: isDeleting }}
           >
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
           </TouchableOpacity>
@@ -219,17 +242,7 @@ const styles = StyleSheet.create({
   },
   titleWrapper: {
     flex: 1,
-  },
-  lockRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 4,
-  },
-  securityTag: {
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 0.8,
+    minWidth: 0,
   },
   title: {
     fontSize: 16,
@@ -242,6 +255,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   badge: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -278,34 +292,43 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   channelInfo: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   channelChip: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
+    borderWidth: 1,
   },
   channelChipText: {
     fontSize: 11,
     fontWeight: "700",
   },
   triggerText: {
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: "500",
   },
   actions: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   actionBtn: {
-    padding: 8,
-    borderRadius: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
   },
 });
 

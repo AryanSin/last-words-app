@@ -1,35 +1,71 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Platform,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { VaultGuideModal } from "../../components/VaultGuideModal";
 import { VaultMessageCard } from "../../components/VaultMessageCard";
 import { useTheme } from "../../hooks/use-theme-color";
 import { MessageItem, useDeleteMessage, useMessages } from "../../hooks/useMessages";
 
+type FilterTab = "ALL" | "ARMED" | "DISPATCHED";
+
 export default function MessagesScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   // TanStack Query: Fetch messages (auto-cached and synchronized)
   const { data, isLoading, isRefetching, refetch } = useMessages(1, 50);
   const deleteMutation = useDeleteMessage();
 
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const rawMessages = data?.messages || [];
-  const filteredMessages = rawMessages;
+
+  const pendingCount = useMemo(
+    () => rawMessages.filter((m) => m.status === "PENDING").length,
+    [rawMessages],
+  );
+  const sentCount = useMemo(
+    () => rawMessages.filter((m) => m.status === "SENT").length,
+    [rawMessages],
+  );
+
+  const filteredMessages = useMemo(() => {
+    return rawMessages.filter((item) => {
+      // Tab filter
+      if (activeTab === "ARMED" && item.status !== "PENDING") return false;
+      if (activeTab === "DISPATCHED" && item.status !== "SENT") return false;
+
+      // Search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        const titleMatch = (item.title || "").toLowerCase().includes(query);
+        const nameMatch = (item.recipientName || "").toLowerCase().includes(query);
+        const emailMatch = (item.recipientEmail || "").toLowerCase().includes(query);
+        const phoneMatch = (item.recipientPhone || "").toLowerCase().includes(query);
+        const contentMatch = (item.content || "").toLowerCase().includes(query);
+        return titleMatch || nameMatch || emailMatch || phoneMatch || contentMatch;
+      }
+
+      return true;
+    });
+  }, [rawMessages, activeTab, searchQuery]);
 
   const performDelete = async (id: number) => {
     try {
@@ -48,17 +84,149 @@ export default function MessagesScreen() {
         <View>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Last Words Messages</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-            {rawMessages.length} {rawMessages.length === 1 ? "message" : "messages"} scheduled
+            {rawMessages.length} {rawMessages.length === 1 ? "message" : "messages"} sealed in vault
           </Text>
         </View>
 
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[
+              styles.guideBtn,
+              { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+            ]}
+            onPress={() => setShowGuideModal(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Open Vault Guide & FAQ"
+          >
+            <Ionicons name="help-circle-outline" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push("/messages/create")}
+            activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Compose new message"
+          >
+            <Ionicons name="add" size={18} color={isDark ? "#080C14" : "#FFFFFF"} />
+            <Text style={[styles.composeBtnText, { color: isDark ? "#080C14" : "#FFFFFF" }]}>Compose</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Search Input Bar */}
+      <View
+        style={[
+          styles.searchBar,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Ionicons name="search-outline" size={18} color={colors.textSubtle} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search by title, recipient, or address..."
+          placeholderTextColor={colors.textSubtle}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          accessibilityLabel="Search Vault Messages"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setSearchQuery("")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Clear Search Query"
+          >
+            <Ionicons name="close-circle" size={16} color={colors.textSubtle} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Filter Segment Tabs */}
+      <View style={styles.filterRow}>
         <TouchableOpacity
-          style={[styles.composeBtn, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/messages/create")}
-          activeOpacity={0.8}
+          style={[
+            styles.filterTab,
+            {
+              backgroundColor: activeTab === "ALL" ? colors.primarySurface : colors.surfaceRaised,
+              borderColor: activeTab === "ALL" ? colors.primary : colors.border,
+            },
+          ]}
+          onPress={() => setActiveTab("ALL")}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === "ALL" }}
         >
-          <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.composeBtnText}>Compose</Text>
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: activeTab === "ALL" ? colors.primary : colors.textMuted },
+            ]}
+          >
+            All ({rawMessages.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            {
+              backgroundColor:
+                activeTab === "ARMED" ? colors.pulseEmeraldSurface : colors.surfaceRaised,
+              borderColor: activeTab === "ARMED" ? colors.pulseEmerald : colors.border,
+            },
+          ]}
+          onPress={() => setActiveTab("ARMED")}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === "ARMED" }}
+        >
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: activeTab === "ARMED" ? colors.pulseEmerald : colors.textMuted },
+            ]}
+          >
+            Armed ({pendingCount})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            {
+              backgroundColor:
+                activeTab === "DISPATCHED" ? colors.primarySurface : colors.surfaceRaised,
+              borderColor: activeTab === "DISPATCHED" ? colors.primary : colors.border,
+            },
+          ]}
+          onPress={() => setActiveTab("DISPATCHED")}
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === "DISPATCHED" }}
+        >
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: activeTab === "DISPATCHED" ? colors.primary : colors.textMuted },
+            ]}
+          >
+            Dispatched ({sentCount})
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -99,21 +267,67 @@ export default function MessagesScreen() {
               <View
                 style={[
                   styles.emptyIconBox,
-                  { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+                  { backgroundColor: colors.primarySurface, borderColor: colors.primaryBorder },
                 ]}
               >
-                <Ionicons name="mail-open-outline" size={40} color={colors.textSubtle} />
+                <Ionicons name="mail-open-outline" size={40} color={colors.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Messages Found</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-                Create your first message to be dispatched upon confirmed inactivity.
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {searchQuery ? "No Matching Messages Found" : "No Messages Armed Yet"}
               </Text>
-              <TouchableOpacity
-                style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
-                onPress={() => router.push("/messages/create")}
-              >
-                <Text style={styles.emptyBtnText}>Create Last Words Message</Text>
-              </TouchableOpacity>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                {searchQuery
+                  ? "Try checking for typos or searching a different recipient or keyword."
+                  : "Compose a confidential message, credential instructions, or personal farewell. Recipients are never notified until your inactivity switch triggers."}
+              </Text>
+              <View style={styles.emptyActions}>
+                {searchQuery ? (
+                  <TouchableOpacity
+                    style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => setSearchQuery("")}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear Search"
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.emptyBtnText, { color: isDark ? "#080C14" : "#FFFFFF" }]}>
+                      Clear Search
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => router.push("/messages/create")}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Arm Your First Message"
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.emptyBtnText, { color: isDark ? "#080C14" : "#FFFFFF" }]}>
+                        Arm Your First Message
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.emptySecondaryBtn,
+                        { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+                      ]}
+                      onPress={() => setShowGuideModal(true)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Learn How It Works"
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="help-circle-outline" size={16} color={colors.textMuted} />
+                      <Text style={[styles.emptySecondaryBtnText, { color: colors.text }]}>
+                        Learn How It Works
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
           }
         />
@@ -124,8 +338,12 @@ export default function MessagesScreen() {
         style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
         onPress={() => router.push("/messages/create")}
         activeOpacity={0.85}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Compose new message"
       >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
+        <Ionicons name="add" size={28} color={isDark ? "#080C14" : "#FFFFFF"} />
       </TouchableOpacity>
 
       {/* Cross-Platform Custom Delete Confirmation Modal */}
@@ -144,6 +362,12 @@ export default function MessagesScreen() {
           }
         }}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      {/* Vault Guide & FAQ Modal */}
+      <VaultGuideModal
+        visible={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
       />
     </SafeAreaView>
   );
@@ -171,6 +395,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  guideBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
@@ -184,27 +421,43 @@ const styles = StyleSheet.create({
   composeBtn: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
-    paddingHorizontal: 12,
+    minHeight: 44,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
   },
   composeBtnText: {
-    color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "700",
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1.2,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    padding: 0,
   },
   filterRow: {
     flexDirection: "row",
     gap: 8,
   },
-  filterChip: {
+  filterTab: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
   },
-  filterChipText: {
+  filterTabText: {
     fontSize: 12,
     fontWeight: "700",
   },
@@ -234,28 +487,50 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   emptyBtn: {
-    marginTop: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 12,
   },
   emptyBtnText: {
-    color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
+  },
+  emptySecondaryBtn: {
+    minHeight: 44,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  emptySecondaryBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  emptyActions: {
+    marginTop: 20,
+    gap: 10,
+    width: "100%",
+    maxWidth: 280,
   },
   fab: {
     position: "absolute",
-    bottom: 24,
     right: 20,
+    bottom: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 6,
   },
 });

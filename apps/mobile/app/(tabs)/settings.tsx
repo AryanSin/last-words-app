@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -14,8 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { SecurityAuthModal } from "../../components/SecurityAuthModal";
+import { VaultGuideModal } from "../../components/VaultGuideModal";
 import { useTheme } from "../../hooks/use-theme-color";
 import { api } from "../../services/apiClient";
 import { biometricService, BiometricStatus } from "../../services/biometricService";
@@ -34,11 +35,40 @@ export default function SettingsScreen() {
   const [days, setDays] = useState(
     user?.defaultTriggerAfterDays?.toString() || "365",
   );
+  const [daysError, setDaysError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDisableAuthModal, setShowDisableAuthModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
+  const validateDays = (value: string): string => {
+    if (!value.trim()) {
+      return "Inactivity threshold cannot be empty.";
+    }
+    const num = parseInt(value.trim(), 10);
+    if (isNaN(num) || !/^\d+$/.test(value.trim())) {
+      return "Please enter a valid whole number of days.";
+    }
+    if (num < 1 || num > 3650) {
+      return "Inactivity duration must be between 1 and 3,650 days (up to 10 years).";
+    }
+    return "";
+  };
+
+  const handleDaysChange = (text: string) => {
+    setDays(text);
+    if (statusMessage) setStatusMessage("");
+    const err = validateDays(text);
+    setDaysError(err);
+  };
+
+  const handleSelectPreset = (preset: number) => {
+    setDays(preset.toString());
+    setDaysError("");
+    if (statusMessage) setStatusMessage("");
+  };
 
   // Biometric preferences state
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
@@ -144,16 +174,15 @@ export default function SettingsScreen() {
 
   const handleSaveTrigger = async () => {
     setStatusMessage("");
-    const num = parseInt(days, 10);
-    if (isNaN(num) || num < 1) {
-      const msg = "Please enter a valid number of days (minimum 1).";
-      setStatusMessage(msg);
-      if (Platform.OS !== "web") Alert.alert("Invalid Duration", msg);
+    const err = validateDays(days);
+    if (err) {
+      setDaysError(err);
       return;
     }
-
+    setDaysError("");
     setSaving(true);
     try {
+      const num = parseInt(days.trim(), 10);
       await updateUserTriggerDays(num);
       setStatusMessage(`Default inactivity trigger set to ${num} days.`);
       if (Platform.OS !== "web") {
@@ -187,6 +216,14 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Screen Header */}
+        <View style={styles.headerContainer}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Settings & Security</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            Inactivity switch configuration, biometrics, and safety nets
+          </Text>
+        </View>
+
         {statusMessage ? (
           <View
             style={[
@@ -241,7 +278,11 @@ export default function SettingsScreen() {
                 <View
                   style={[
                     styles.biometricIconBox,
-                    { backgroundColor: colors.pulseEmeraldSurface },
+                    {
+                      backgroundColor: colors.pulseEmeraldSurface,
+                      borderColor: colors.pulseEmerald,
+                      borderWidth: 1,
+                    },
                   ]}
                 >
                   <Ionicons
@@ -268,6 +309,7 @@ export default function SettingsScreen() {
                 onValueChange={handleToggleBiometrics}
                 trackColor={{ false: colors.border, true: colors.pulseEmerald }}
                 thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined}
+                accessibilityLabel={`${biometricStatus.biometricType} Pulse Check-In`}
               />
             </View>
           </View>
@@ -277,7 +319,7 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardSectionTitle, { color: colors.text }]}>Default Inactivity Threshold</Text>
           <Text style={[styles.cardDescription, { color: colors.textMuted }]}>
-            How many days of inactivity should pass before your Last Words messages are dispatched to recipients?
+            Sets the default inactivity duration before automated message dispatch begins. Individual messages can override this timeframe. You will receive multiple advance warnings before any dispatch.
           </Text>
 
           {/* Quick Presets */}
@@ -294,13 +336,22 @@ export default function SettingsScreen() {
                       borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
-                  onPress={() => setDays(preset.toString())}
+                  onPress={() => handleSelectPreset(preset)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${preset} days inactivity threshold`}
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <Text
                     style={[
                       styles.presetText,
                       {
-                        color: isSelected ? "#FFFFFF" : colors.textMuted,
+                        color: isSelected
+                          ? (isDark ? "#080C14" : "#FFFFFF")
+                          : colors.textMuted,
+                        fontWeight: isSelected ? "800" : "600",
                       },
                     ]}
                   >
@@ -318,39 +369,145 @@ export default function SettingsScreen() {
                 styles.input,
                 {
                   backgroundColor: colors.inputBackground,
-                  borderColor: colors.border,
+                  borderColor: daysError ? colors.danger : colors.border,
                   color: colors.text,
                 },
               ]}
               value={days}
-              onChangeText={setDays}
+              onChangeText={handleDaysChange}
               keyboardType="number-pad"
+              maxLength={4}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveTrigger}
               placeholder="e.g. 365"
               placeholderTextColor={colors.textSubtle}
+              accessibilityLabel="Inactivity threshold days"
+              aria-invalid={!!daysError}
             />
             <TouchableOpacity
               style={[
                 styles.saveButton,
                 { backgroundColor: colors.primary },
-                saving && styles.buttonDisabled,
+                (saving || !!daysError || !days.trim()) && styles.buttonDisabled,
               ]}
               onPress={handleSaveTrigger}
-              disabled={saving}
+              disabled={saving || !!daysError || !days.trim()}
+              activeOpacity={0.8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Save inactivity threshold"
+              accessibilityState={{ disabled: saving || !!daysError || !days.trim(), busy: saving }}
             >
               {saving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color={isDark ? "#080C14" : "#FFFFFF"} size="small" />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text
+                  style={[
+                    styles.saveButtonText,
+                    { color: isDark ? "#080C14" : "#FFFFFF" },
+                  ]}
+                >
+                  Save
+                </Text>
               )}
             </TouchableOpacity>
           </View>
+          {daysError ? (
+            <View style={styles.inlineErrorRow} accessibilityRole="alert">
+              <Ionicons name="alert-circle" size={14} color={colors.danger} />
+              <Text style={[styles.inlineErrorText, { color: colors.danger }]}>{daysError}</Text>
+            </View>
+          ) : null}
         </View>
+
+        {/* Pre-Dispatch Warning Timeline Card */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="notifications-outline" size={18} color={colors.warning} />
+            <Text style={[styles.cardSectionTitle, { color: colors.text, marginBottom: 0 }]}>
+              Pre-Dispatch Warning Timeline
+            </Text>
+          </View>
+          <Text style={[styles.cardDescription, { color: colors.textMuted, marginTop: 6 }]}>
+            To protect against accidental dispatches if you are traveling or offline, Last Words alerts you through multiple channels before sending any message:
+          </Text>
+
+          <View style={styles.timelineList}>
+            <View style={styles.timelineItem}>
+              <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
+              <View style={styles.timelineContent}>
+                <Text style={[styles.timelineTitle, { color: colors.text }]}>14 Days Remaining: Gentle Reminder</Text>
+                <Text style={[styles.timelineDesc, { color: colors.textMuted }]}>
+                  Push notification reminding you to open the app or confirm life pulse.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.timelineItem}>
+              <View style={[styles.timelineDot, { backgroundColor: colors.warning }]} />
+              <View style={styles.timelineContent}>
+                <Text style={[styles.timelineTitle, { color: colors.warning }]}>7 Days Remaining: Urgent Notice</Text>
+                <Text style={[styles.timelineDesc, { color: colors.textMuted }]}>
+                  High-priority push alert and warning email sent to your registered address.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.timelineItem}>
+              <View style={[styles.timelineDot, { backgroundColor: colors.danger }]} />
+              <View style={styles.timelineContent}>
+                <Text style={[styles.timelineTitle, { color: colors.danger }]}>24 Hours Remaining: Final Grace Period</Text>
+                <Text style={[styles.timelineDesc, { color: colors.textMuted }]}>
+                  Final critical notice. Any check-in immediately halts dispatch and resets the full countdown.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Vault Guide & FAQ Card */}
+        <TouchableOpacity
+          style={[
+            styles.guideCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+          onPress={() => setShowGuideModal(true)}
+          activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Open Vault Guide & FAQ"
+        >
+          <View style={styles.guideCardLeft}>
+            <View
+              style={[
+                styles.guideIconBox,
+                {
+                  backgroundColor: colors.primarySurface,
+                  borderColor: colors.primaryBorder,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Ionicons name="help-buoy-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.guideTitle, { color: colors.text }]}>Vault Guide & FAQ</Text>
+              <Text style={[styles.guideSubtitle, { color: colors.textMuted }]}>
+                Confidentiality, safety nets, and recipient dispatch explained
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
 
         {/* Cryptographic Protection Badge */}
         <View
           style={[
             styles.cryptoCard,
-            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+            {
+              backgroundColor: colors.surface,
+              borderColor: isDark ? "rgba(56, 189, 248, 0.25)" : colors.primaryBorder,
+            },
           ]}
         >
           <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
@@ -375,6 +532,10 @@ export default function SettingsScreen() {
           onPress={() => setShowLogoutModal(true)}
           disabled={loggingOut}
           activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Sign Out of Last Words"
+          accessibilityState={{ disabled: loggingOut, busy: loggingOut }}
         >
           {loggingOut ? (
             <ActivityIndicator color={colors.danger} size="small" />
@@ -412,6 +573,12 @@ export default function SettingsScreen() {
         onVerifyPassword={handleVerifyPasswordToDisable}
         onCancel={handleCancelDisableModal}
       />
+
+      {/* Vault Guide & FAQ Modal */}
+      <VaultGuideModal
+        visible={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -423,6 +590,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
   },
   statusBanner: {
     borderWidth: 1,
@@ -520,6 +700,8 @@ const styles = StyleSheet.create({
   },
   presetChip: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: "center",
     paddingVertical: 8,
     borderRadius: 10,
     alignItems: "center",
@@ -542,6 +724,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   saveButton: {
+    minHeight: 44,
+    minWidth: 72,
     paddingHorizontal: 20,
     borderRadius: 12,
     justifyContent: "center",
@@ -555,6 +739,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
+  inlineErrorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  inlineErrorText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
   cryptoCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,6 +757,39 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  timelineList: {
+    gap: 12,
+    marginTop: 4,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 5,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  timelineDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
   cryptoTitle: {
     fontSize: 13,
@@ -573,10 +800,42 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 16,
   },
+  guideCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.2,
+    marginBottom: 16,
+  },
+  guideCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    marginRight: 8,
+  },
+  guideIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guideTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  guideSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   logoutButton: {
     flexDirection: "row",
     borderWidth: 1,
     borderRadius: 16,
+    minHeight: 48,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
