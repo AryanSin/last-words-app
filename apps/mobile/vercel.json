@@ -2,6 +2,12 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -22,3 +28,4 @@
     }
   ]
 }
+
