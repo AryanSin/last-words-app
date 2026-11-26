@@ -1,1 +1,36 @@
-node_modules
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment Variables
+.env
+.env.*
+.env*.local
+!.env.example
+
+# Build Outputs
+dist/
+build/
+.expo/
+web-build/
+
+# Logs & Diagnostics
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor & IDEs
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
