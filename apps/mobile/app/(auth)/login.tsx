@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { exchangeCodeAsync } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -63,6 +64,14 @@ export default function LoginScreen() {
       ? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
       : undefined);
 
+  const androidRedirectUri = useMemo(() => {
+    if (androidClientId && androidClientId.endsWith(".apps.googleusercontent.com")) {
+      const clientPrefix = androidClientId.replace(".apps.googleusercontent.com", "");
+      return `com.googleusercontent.apps.${clientPrefix}:/oauthredirect`;
+    }
+    return "com.lastwords.app:/oauthredirect";
+  }, [androidClientId]);
+
   const authConfig = useMemo(() => {
     return {
       webClientId,
@@ -70,15 +79,16 @@ export default function LoginScreen() {
       androidClientId:
         androidClientId || (Platform.OS === "android" ? "android-client-id-pending" : undefined),
       redirectUri: Platform.select({
-        android: "com.lastwords.app:/oauthredirect",
+        android: androidRedirectUri,
         ios: "com.lastwords.app:/oauthredirect",
         default: undefined,
       }),
+      shouldAutoExchangeCode: false,
       selectAccount: true,
     };
-  }, [webClientId, iosClientId, androidClientId]);
+  }, [webClientId, iosClientId, androidClientId, androidRedirectUri]);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(authConfig);
+  const [request, , promptAsync] = Google.useIdTokenAuthRequest(authConfig);
 
   useEffect(() => {
     if (request) {
@@ -94,44 +104,11 @@ export default function LoginScreen() {
 
   const handleGoogleSignInWithToken = useCallback(
     async (idToken: string) => {
-      setGoogleLoading(true);
-      try {
-        await loginWithGoogle(idToken);
-        router.replace("/(tabs)");
-      } catch (err: any) {
-        Alert.alert(
-          "Google Authentication Failed",
-          err.message ||
-            "Failed to authenticate with Google. Please check your network and credentials.",
-        );
-      } finally {
-        setGoogleLoading(false);
-      }
+      await loginWithGoogle(idToken);
+      router.replace("/(tabs)");
     },
     [loginWithGoogle, router],
   );
-
-  // Handle Google OAuth deep link / redirect responses
-  useEffect(() => {
-    if (response?.type === "success") {
-      const token =
-        response.params?.id_token ||
-        (response as any).authentication?.idToken ||
-        response.params?.access_token ||
-        (response as any).authentication?.accessToken;
-
-      if (token) {
-        setTimeout(() => {
-          handleGoogleSignInWithToken(token);
-        }, 0);
-      }
-    } else if (response?.type === "error") {
-      Alert.alert(
-        "Google Sign-In Failed",
-        response.error?.message || "Google authentication failed. Please try again.",
-      );
-    }
-  }, [response, handleGoogleSignInWithToken]);
 
   const handleGoogleAuthPress = async () => {
     // Prevent sending a Web Client ID with custom scheme on Android
@@ -179,11 +156,26 @@ export default function LoginScreen() {
     try {
       const res = await promptAsync();
       if (res?.type === "success") {
-        const token =
+        let token =
           res.params?.id_token ||
           (res as any).authentication?.idToken ||
           res.params?.access_token ||
           (res as any).authentication?.accessToken;
+
+        if (!token && res.params?.code && request.clientId) {
+          const tokenResult = await exchangeCodeAsync(
+            {
+              clientId: request.clientId,
+              code: res.params.code,
+              redirectUri: request.redirectUri,
+              extraParams: request.codeVerifier
+                ? { code_verifier: request.codeVerifier }
+                : undefined,
+            },
+            Google.discovery,
+          );
+          token = tokenResult.idToken || tokenResult.accessToken;
+        }
 
         if (token) {
           await handleGoogleSignInWithToken(token);
@@ -200,7 +192,10 @@ export default function LoginScreen() {
         );
       }
     } catch (err: any) {
-      Alert.alert("Google Sign-In Error", err?.message || "Unable to open Google sign-in window.");
+      Alert.alert(
+        "Google Sign-In Error",
+        err?.message || "Unable to complete Google sign-in.",
+      );
     } finally {
       setGoogleLoading(false);
     }
