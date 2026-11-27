@@ -16,15 +16,13 @@ export function useThemeColor(
 }
 
 export function useTheme(): {
-  theme: "light" | "dark";
-  isDark: boolean;
+  theme: "dark";
+  isDark: true;
   colors: ThemeColors;
 } {
-  const scheme = useColorScheme() ?? "dark";
-  const isDark = scheme === "dark";
   return {
-    theme: isDark ? "dark" : "light",
-    isDark,
-    colors: Colors[isDark ? "dark" : "light"],
+    theme: "dark",
+    isDark: true,
+    colors: Colors.dark,
   };
 }

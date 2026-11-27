@@ -89,12 +89,12 @@ export default function DashboardScreen() {
     }
   };
 
-  const isInitialLoading = isLoading || !user || isSwitchLoading || isMessagesLoading;
+  const isInitialLoading = isLoading || !user;
 
   if (isInitialLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ width: 44, height: 44 }} />
         <Text style={[styles.loadingText, { color: colors.textMuted }]}>
           Loading Vault Status...
         </Text>

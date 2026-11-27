@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { useTheme } from "../../hooks/use-theme-color";
 
 export default function TabLayout() {
@@ -11,6 +11,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: "#080C14" },
         tabBarActiveTintColor: colors.tabIconSelected,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarShowLabel: true,
@@ -27,14 +28,18 @@ export default function TabLayout() {
           maxWidth: 180,
         },
         tabBarStyle: {
-          backgroundColor: colors.tabBarBackground,
-          borderTopColor: colors.tabBarBorder,
+          backgroundColor: "#090D16",
+          borderTopColor: "#1E293B",
           borderTopWidth: 1,
           height: Platform.OS === "web" ? 64 : Platform.OS === "ios" ? 84 : 64,
           paddingBottom: Platform.OS === "ios" ? 24 : 8,
           paddingTop: 8,
           ...Platform.select({
             web: {
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
               maxWidth: 540,
               width: "100%",
               marginLeft: "auto" as any,
@@ -47,9 +52,19 @@ export default function TabLayout() {
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.35,
               shadowRadius: 16,
+              zIndex: 100,
             },
           }),
         },
+        tabBarBackground: () => (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#090D16",
+              borderRadius: Platform.OS === "web" ? 20 : 0,
+            }}
+          />
+        ),
         headerStyle: {
           backgroundColor: colors.headerBackground,
         },

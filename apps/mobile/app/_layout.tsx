@@ -1,6 +1,17 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  DarkTheme as NavDarkTheme,
+  ThemeProvider as NavThemeProvider,
+} from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { useFonts } from "expo-font";
+import {
+  DarkTheme as ExpoDarkTheme,
+  ThemeProvider as ExpoThemeProvider,
+  Stack,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
@@ -20,6 +31,10 @@ export const unstable_settings = {
 export default function RootLayout() {
   const scheme = useColorScheme() ?? "dark";
   const colors = Colors[scheme];
+
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+  });
 
   const [queryClient] = useState(
     () =>
@@ -75,45 +90,83 @@ export default function RootLayout() {
     };
   }, [initAuth, performBackgroundCheckIn, trySilentTokenRefresh]);
 
+  const vaultTheme = {
+    ...NavDarkTheme,
+    ...ExpoDarkTheme,
+    dark: true,
+    colors: {
+      ...NavDarkTheme.colors,
+      ...ExpoDarkTheme.colors,
+      primary: colors.primary,
+      background: "#080C14",
+      card: "#090D16",
+      text: "#F8FAFC",
+      border: "#1E293B",
+      notification: "#EF4444",
+    },
+  };
+
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: "#080C14" }}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="messages/create"
-              options={{
-                presentation: "modal",
-                headerShown: true,
-                title: "New Message",
-                headerStyle: { backgroundColor: colors.headerBackground },
-                headerTintColor: colors.headerText,
+        <NavThemeProvider value={vaultTheme}>
+          <ExpoThemeProvider value={vaultTheme}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "#080C14" },
               }}
-            />
-            <Stack.Screen
-              name="messages/[id]"
-              options={{
-                headerShown: true,
-                title: "Message Details",
-                headerStyle: { backgroundColor: colors.headerBackground },
-                headerTintColor: colors.headerText,
-              }}
-            />
-            <Stack.Screen
-              name="messages/[id]/edit"
-              options={{
-                presentation: "modal",
-                headerShown: true,
-                title: "Edit Message",
-                headerStyle: { backgroundColor: colors.headerBackground },
-                headerTintColor: colors.headerText,
-              }}
-            />
-          </Stack>
-          <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        </ThemeProvider>
+            >
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+              <Stack.Screen
+                name="(auth)/login"
+                options={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+              <Stack.Screen
+                name="messages/create"
+                options={{
+                  presentation: "modal",
+                  headerShown: true,
+                  title: "New Message",
+                  headerStyle: { backgroundColor: colors.headerBackground },
+                  headerTintColor: colors.headerText,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+              <Stack.Screen
+                name="messages/[id]"
+                options={{
+                  headerShown: true,
+                  title: "Message Details",
+                  headerStyle: { backgroundColor: colors.headerBackground },
+                  headerTintColor: colors.headerText,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+              <Stack.Screen
+                name="messages/[id]/edit"
+                options={{
+                  presentation: "modal",
+                  headerShown: true,
+                  title: "Edit Message",
+                  headerStyle: { backgroundColor: colors.headerBackground },
+                  headerTintColor: colors.headerText,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+            </Stack>
+            <StatusBar style="light" />
+          </ExpoThemeProvider>
+        </NavThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
