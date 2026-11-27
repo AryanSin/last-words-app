@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { exchangeCodeAsync } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +30,9 @@ type AuthMode = "login" | "register";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
   const { colors, isDark } = useTheme();
   const { isWide } = useResponsive();
 
@@ -180,18 +183,29 @@ export default function LoginScreen() {
         if (token) {
           await handleGoogleSignInWithToken(token);
         } else {
+          if (pathnameRef.current === "/oauthredirect") {
+            router.replace("/(auth)/login");
+          }
           Alert.alert(
             "Google Sign-In",
             "No authentication token was received from Google. Please try again.",
           );
         }
       } else if (res?.type === "error") {
+        if (pathnameRef.current === "/oauthredirect") {
+          router.replace("/(auth)/login");
+        }
         Alert.alert(
           "Google Sign-In Failed",
           res.error?.message || "Google authentication failed. Please try again.",
         );
+      } else if (pathnameRef.current === "/oauthredirect") {
+        router.replace("/(auth)/login");
       }
     } catch (err: any) {
+      if (pathnameRef.current === "/oauthredirect") {
+        router.replace("/(auth)/login");
+      }
       Alert.alert(
         "Google Sign-In Error",
         err?.message || "Unable to complete Google sign-in.",

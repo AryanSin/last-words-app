@@ -63,10 +63,11 @@ export default function RootLayout() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
+    const isOAuthRedirect = (segments[0] as string) === "oauthredirect";
 
-    if (!isAuthenticated && !inAuthGroup) {
+    if (!isAuthenticated && !inAuthGroup && !isOAuthRedirect) {
       router.replace("/(auth)/login");
-    } else if (isAuthenticated && inAuthGroup) {
+    } else if (isAuthenticated && (inAuthGroup || isOAuthRedirect)) {
       router.replace("/(tabs)");
     }
   }, [isAuthenticated, isLoading, segments, router]);
@@ -128,6 +129,14 @@ export default function RootLayout() {
                 name="(auth)/login"
                 options={{
                   headerShown: false,
+                  contentStyle: { backgroundColor: "#080C14" },
+                }}
+              />
+              <Stack.Screen
+                name="oauthredirect"
+                options={{
+                  headerShown: false,
+                  animation: "none",
                   contentStyle: { backgroundColor: "#080C14" },
                 }}
               />
