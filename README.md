@@ -2,6 +2,11 @@
 
 An automated dead man's switch, cryptographic vault, and scheduled message delivery platform. Messages and sensitive instructions are securely encrypted at rest (AES-256-GCM) and automatically dispatched to designated recipients via Email when a user's inactivity threshold is reached.
 
+## Live App & Downloads
+
+- **Web App:** [last-words-app-three.vercel.app](http://last-words-app-three.vercel.app/)
+- **Android APK (v1.0.0):** [Download `last-words-v1.0.0.apk`](https://github.com/AryanSin/last-words-app/releases/download/v1.0.0/last-words-v1.0.0.apk) · [View Releases](https://github.com/AryanSin/last-words-app/releases)
+
 ---
 
 ## Features
